@@ -1,0 +1,250 @@
+{
+  "__meta__": {
+    "name": "English"
+  },
+
+  "main.app.title": "Navidrome Mix Studio",
+
+  "main.sidebar.mix": "Mix Generator",
+  "main.sidebar.stats": "Statistics",
+  "main.sidebar.playlists": "Playlist Manager",
+  "main.sidebar.blacklist": "Blocklist",
+  "main.sidebar.settings": "Settings",
+  "main.sidebar.status": "Status:",
+  "main.sidebar.connected": "● Connected",
+  "main.sidebar.disconnected": "● Disconnected",
+
+  "mix.group.strategy": "Selection Method",
+  "mix.group.version": "Exclude Filters",
+
+  "mix.label.strategy": "Method:",
+  "mix.label.filter": "Search:",
+  "mix.placeholder.filter": "Search title, artist, or album...",
+  "mix.label.limit": "Songs:",
+
+  "mix.button.generate": "Generate Mix",
+  "mix.button.save": "Save Playlist",
+
+  "mix.checkbox.adaptive": "Adaptive Mode",
+  "mix.checkbox.debug": "Show Debug Information",
+  "mix.checkbox.inst": "Instrumental",
+  "mix.checkbox.live": "Live",
+  "mix.checkbox.remix": "Remix",
+  "mix.checkbox.demo": "Demo",
+  "mix.checkbox.acoustic": "Acoustic",
+
+  "mix.playlist.title_suffix": "Mix",
+
+  "mix.strategy.daily.name": "Daily Mix",
+  "mix.strategy.daily.desc": "A balanced mix of your favorites, familiar tracks, and new discoveries.",
+
+  "mix.strategy.favorites.name": "Favorites Mix",
+  "mix.strategy.favorites.desc": "Prioritizes your favorite and most-played tracks.",
+
+  "mix.strategy.discovery.name": "Discovery Mix",
+  "mix.strategy.discovery.desc": "Explore songs in your library that you've rarely or never played.",
+
+  "mix.strategy.forgotten.name": "Forgotten Favorites",
+  "mix.strategy.forgotten.desc": "Rediscover songs you once enjoyed but haven't listened to recently.",
+
+  "statistics.tab.library": "Library",
+  "statistics.tab.report": "Mix Report",
+
+  "statistics.button.refresh_profile": "Analyze Library",
+  "statistics.button.show_last_report": "View Latest Report",
+
+  "statistics.library.overview_title": "Library Overview",
+  "statistics.library.songs": "Songs",
+  "statistics.library.albums": "Albums",
+  "statistics.library.artists": "Artists",
+
+  "statistics.metrics.favorite_ratio": "Favorite Ratio",
+  "statistics.metrics.year_known": "Release Year Availability",
+  "statistics.metrics.version_tracks": "Alternate Version Tracks",
+
+  "statistics.artist.distribution_title": "Artist Distribution",
+
+  "statistics.report.title": "Selection Report",
+  "statistics.report.confidence": "Recommendation Confidence",
+  "statistics.report.generation_time": "Generation Time",
+  "statistics.report.candidate_pool": "Candidate Pool",
+  "statistics.report.playlist_size": "Playlist Size",
+
+  "statistics.report.diversity_title": "Diversity Analysis",
+  "statistics.report.artist_diversity": "Artist Diversity",
+  "statistics.report.album_diversity": "Album Diversity",
+
+  "statistics.report.score_title": "Score Statistics",
+  "statistics.report.strategy_title": "Selection Methods",
+
+  "statistics.report.no_history": "No mix has been generated yet.",
+
+  "strategy.method.favorite": "Favorites",
+  "strategy.method.recent": "Recently Played",
+  "strategy.method.discovery": "Discovery",
+  "strategy.method.similar_artist": "Similar Artist",
+  "strategy.method.similar_album": "Related Album",
+  "strategy.method.random": "Random",
+  "strategy.method.refill": "Auto Refill",
+  "strategy.method.rotation": "History Rotation",
+  "strategy.method.other": "Other",
+
+  "statistics.score.max": "Highest",
+  "statistics.score.avg": "Average",
+  "statistics.score.min": "Lowest",
+
+  "blocklist.title": "Blocklist",
+
+  "blocklist.label.value_placeholder": "Enter title, artist, album, or ID...",
+  "blocklist.label.search_placeholder": "Search blocklist...",
+
+  "blocklist.button.add": "Add",
+  "blocklist.button.remove": "Remove",
+
+  "blocklist.table.header.category": "Category",
+  "blocklist.table.header.value": "Value",
+  "blocklist.table.header.action": "Action",
+
+  "blocklist.category.songs": "Songs",
+  "blocklist.category.albums": "Albums",
+  "blocklist.category.artists": "Artists",
+  "blocklist.category.genres": "Genres",
+    "table.header.title": "Title",
+  "table.header.artist": "Artist",
+  "table.header.album": "Album",
+  "table.header.year": "Year",
+  "table.header.duration": "Duration",
+  "table.header.score": "Score",
+  "table.header.reason": "Reason",
+  "table.header.share": "Share",
+  "table.header.strategy": "Method",
+  "table.header.count": "Count",
+  "table.header.metric": "Metric",
+  "table.header.value": "Value",
+
+  "common.evaluation.low": "Low",
+  "common.evaluation.medium": "Medium",
+  "common.evaluation.high": "High",
+  "common.evaluation.excellent": "Excellent",
+  "common.none": "None",
+  "common.unknown": "Unknown",
+
+  "settings.title": "Settings",
+
+  "settings.tab.server": "Server",
+  "settings.tab.general": "General",
+
+  "settings.group.profiles": "Profiles",
+
+  "settings.label.active_profile": "Active Profile:",
+
+  "settings.button.add": "+ Add",
+  "settings.button.delete": "Delete",
+
+  "settings.group.details": "Connection Details",
+
+  "settings.label.prof_name": "Profile Name:",
+  "settings.label.server_url": "Server URL:",
+  "settings.label.username": "Username:",
+  "settings.label.password": "Password:",
+
+  "settings.button.test_conn": "Test Connection",
+
+  "settings.status.not_tested": "Status: Not Tested",
+  "settings.status.connecting": "Connecting...",
+  "settings.status.connected_format": "✔ Connected (v{version} · {ms} ms)",
+  "settings.status.failed_format": "✘ Connection Failed: {error}",
+
+  "settings.group.priority": "Server Priority",
+
+  "settings.label.primary_server": "Primary Server:",
+  "settings.label.secondary_server": "Secondary Server:",
+
+  "settings.group.language": "Language",
+
+  "settings.label.language": "Display Language:",
+
+  "settings.group.cache": "Cache",
+
+  "settings.label.cache_enable": "Enable API Response Cache",
+  "settings.label.cache_expire": "Cache Duration:",
+  "settings.label.hours_suffix": "hours",
+
+  "settings.group.scheduler": "Automatic Generation",
+
+  "settings.label.sched_enable": "Enable Automatic Mix Generation",
+  "settings.label.sched_mode": "Execution Mode:",
+  "settings.label.sched_time": "Daily Run Time:",
+
+  "settings.scheduler.mode.daily": "Daily",
+  "settings.scheduler.mode.startup": "At Startup",
+  "settings.scheduler.mode.interval": "Interval",
+
+  "settings.group.mix_defaults": "Default Mix Settings",
+
+  "settings.label.default_count": "Default Song Count:",
+  "settings.label.auto_update": "Automatically Update Mixes at Startup",
+
+  "settings.button.save": "Save All Changes",
+  "settings.button.reset": "Discard Changes",
+  "playlist.name.format": "{name} • {datetime}",
+  "playlist.name.daily": "Daily Mix",
+  "playlist.name.favorites": "Favorites Mix",
+  "playlist.name.discovery": "Discovery Mix",
+  "playlist.name.forgotten": "Forgotten Favorites",
+  "playlist_manager.title": "Playlist Manager",
+  "playlist_manager.search_placeholder": "Search by name...",
+  "playlist_manager.refresh": "Refresh",
+  "playlist_manager.column.name": "Name",
+  "playlist_manager.column.type": "Type",
+  "playlist_manager.column.count": "Songs",
+  "playlist_manager.column.updated": "Updated",
+  "playlist_manager.group.information": "Playlist Information",
+  "playlist_manager.label.name": "Name:",
+  "playlist_manager.label.song_count": "Songs:",
+  "playlist_manager.label.created": "Created:",
+  "playlist_manager.label.updated": "Updated:",
+  "playlist_manager.group.songs": "Songs in Playlist",
+  "playlist_manager.label.cleanup_prefix": "Delete playlists older than",
+  "playlist_manager.label.cleanup_suffix": "days",
+  "playlist_manager.button.cleanup": "Cleanup Now",
+  "playlist_manager.group.cleanup": "Cleanup",
+  "playlist_manager.label.delete_older": "Delete generated playlists older than (days):",
+  "playlist_manager.button.delete": "Delete Selected Playlist",
+  "playlist_manager.dialog.delete.title": "Delete Playlist",
+  "playlist_manager.dialog.delete.msg": "Delete playlist '{name}'?\nThis action cannot be undone.",
+  "playlist_manager.dialog.cleanup.title": "Confirm Cleanup",
+  "playlist_manager.dialog.cleanup.msg": "Delete {count} generated playlists older than {days} days?",
+  "playlist_manager.type.manual": "Manual",
+  "playlist_manager.type.generated": "Mix Generated",
+
+  "about.title": "About This App",
+  "main.sidebar.about": "About",
+  "about.description": "Generate Spotify-style mix playlists from your Navidrome library.",
+  "about.label.version": "Version:",
+  "about.label.author": "Author:",
+  "about.label.license": "License:",
+  "about.label.homepage": "Website:",
+  "about.label.repository": "Repository:",
+  "about.button.view_license": "View License",
+  "about.button.view_third_party": "Third-party Licenses",
+  "error.license_not_found": "License file not found.",
+  "dialog.restart_required.title": "Restart Required",
+  "dialog.restart_required.msg": "Your Navidrome connection settings have been updated successfully.\n\nPlease restart the application before connecting to your server or generating playlists.\n\nThis ensures that the new connection settings are fully applied.",
+    "dialog.error.title": "Error",
+  "dialog.error.gen_failed": "Failed to generate the mix: {error}",
+
+  "dialog.success.title": "Success",
+  "dialog.success.save": "Playlist \"{name}\" was saved successfully.",
+
+  "dialog.delete.title": "Delete Profile",
+  "dialog.delete.msg": "Are you sure you want to delete the profile \"{name}\"?",
+
+  "dialog.save_success.title": "Success",
+  "dialog.save_success.msg": "Settings and profiles have been saved successfully.",
+
+  "warning.profile_required": "At least one profile must exist.",
+
+  "error.connection_title": "Connection Error",
+  "error.connection_msg": "Unable to connect to the server."
+}

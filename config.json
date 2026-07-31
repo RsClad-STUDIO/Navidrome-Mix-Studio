@@ -1,0 +1,27 @@
+{
+  "connection": {
+    "server_url": "",
+    "username": "",
+    "password": ""
+  },
+  "window": {
+    "width": 1100,
+    "height": 700,
+    "maximized": false
+  },
+  "scheduler": {
+    "enabled": false,
+    "mode": "daily",
+    "time": "07:00",
+    "interval_hours": 6
+  },
+  "cache": {
+    "enabled": true,
+    "expire_hours": 24
+  },
+  "mix": {
+    "default_count": 50,
+    "auto_update": false,
+    "default_type": "Recent"
+  }
+}

@@ -1,0 +1,58 @@
+[
+  {
+    "name": "Daily Mix",
+    "limit": 25,
+    "mix_type": "Recent",
+    "favorite_priority": "Medium",
+    "album_diversity": "Normal",
+    "artist_diversity": "Normal",
+    "suppress_instrumental": true,
+    "suppress_live": false,
+    "suppress_remix": false,
+    "suppress_demo": false,
+    "suppress_acoustic": false,
+    "extra_params": {}
+  },
+  {
+    "name": "Favorites Mix",
+    "limit": 30,
+    "mix_type": "Popular",
+    "favorite_priority": "High",
+    "album_diversity": "Normal",
+    "artist_diversity": "Normal",
+    "suppress_instrumental": true,
+    "suppress_live": false,
+    "suppress_remix": false,
+    "suppress_demo": false,
+    "suppress_acoustic": false,
+    "extra_params": {}
+  },
+  {
+    "name": "Discovery Mix",
+    "limit": 25,
+    "mix_type": "Discovery",
+    "favorite_priority": "Low",
+    "album_diversity": "Normal",
+    "artist_diversity": "Normal",
+    "suppress_instrumental": true,
+    "suppress_live": false,
+    "suppress_remix": false,
+    "suppress_demo": false,
+    "suppress_acoustic": false,
+    "extra_params": {}
+  },
+  {
+    "name": "Decade Mix",
+    "limit": 30,
+    "mix_type": "Era",
+    "favorite_priority": "Medium",
+    "album_diversity": "Normal",
+    "artist_diversity": "Normal",
+    "suppress_instrumental": true,
+    "suppress_live": false,
+    "suppress_remix": false,
+    "suppress_demo": false,
+    "suppress_acoustic": false,
+    "extra_params": {}
+  }
+]
