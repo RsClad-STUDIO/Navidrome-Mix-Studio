@@ -10,7 +10,6 @@ Designed for self-hosted music enthusiasts, Navidrome Mix Studio brings a modern
 
 ---
 
-
 ## Highlights
 
 - Intelligent playlist generation based on listening history
@@ -27,19 +26,19 @@ Designed for self-hosted music enthusiasts, Navidrome Mix Studio brings a modern
 > **Application screenshots will be added here before the first public release.**
 
 
-| Main Window    | Statistics     |
-| -------------- | -------------- |
-| *(Screenshot)* | *(Screenshot)* |
+| Main Window                                       | Statistics                                        |
+| ------------------------------------------------- | ------------------------------------------------- |
+| ![1785461664659](images/README/1785461664659.png) | ![1785461722103](images/README/1785461722103.png) |
 
 
-| Playlist Manager | Settings       |
-| ---------------- | -------------- |
-| *(Screenshot)*   | *(Screenshot)* |
+| Playlist Manager                                  | Settings                                          |
+| ------------------------------------------------- | ------------------------------------------------- |
+| ![1785461736321](images/README/1785461736321.png) | ![1785461759837](images/README/1785461759837.png) |
 
 
-| Blocklist      | About          |
-| -------------- | -------------- |
-| *(Screenshot)* | *(Screenshot)* |
+| Blocklist                                         | About                                             |
+| ------------------------------------------------- | ------------------------------------------------- |
+| ![1785461769847](images/README/1785461769847.png) | ![1785461776098](images/README/1785461776098.png) |
 
 ---
 
@@ -287,8 +286,6 @@ Additional features include:
 
 These tools help you organize your library and improve future recommendations.
 
-
-
 ## Important Notes
 
 > [!IMPORTANT]
@@ -324,7 +321,6 @@ These tools help you organize your library and improve future recommendations.
 > These features are included in the application, but additional compatibility testing is still in progress.
 >
 > If you encounter any unexpected behavior, please open an Issue on GitHub. Your feedback helps improve future releases.
->
 
 # Usage
 
