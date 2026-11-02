@@ -228,6 +228,8 @@
   "main.sidebar.about": "About",
   "about.description": "Generate Spotify-style mix playlists from your Navidrome library.",
   "about.label.version": "Version:",
+  "about.label.python": "Python:",
+  "about.label.pyside": "PySide6:",
   "about.label.author": "Author:",
   "about.label.license": "License:",
   "about.label.homepage": "Website:",
