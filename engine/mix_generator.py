@@ -68,8 +68,31 @@ class MixGenerator:
             all_songs, days_map, now, preset_name, filter_config
         )
 
+        # 検索欄が空なら従来どおり全候補を使用します。
+        # 入力がある場合は曲名・アーティスト名・アルバム名の部分一致で候補を限定します。
+        query = " ".join(str(kwargs.get("query") or "").casefold().split())
+        if query:
+            def matches_query(song: Song) -> bool:
+                searchable = " ".join(
+                    str(value or "")
+                    for value in (song.title, song.artist, song.album)
+                ).casefold()
+                return query in searchable
+
+            clean_pool = [song for song in clean_pool if matches_query(song)]
+            matching_ids = {song.id for song in clean_pool}
+            scored_list = [
+                music_score for music_score in scored_list
+                if music_score.song_id in matching_ids
+            ]
+            self._logger.info(
+                "Search filter applied: query=%r, candidates=%s",
+                query, len(clean_pool)
+            )
+
         context = {
             "days_since_last_play": days_map,
+            "query": query,
             **filter_config,
         }
         strategy = self._strategy_factory.create(preset_name)
