@@ -23,7 +23,6 @@ class FavoritesMixConfig:
 class DiscoveryMixConfig:
     """Discovery Mix 用のパラメータ"""
     PLAY_COUNT_THRESHOLD_INITIAL = 3
-    PLAY_COUNT_THRESHOLD_MAX = 5
     SIMILARITY_LIMIT_RATIO = 0.4  # 好きなアーティスト枠の上限
 
 class ForgottenMixConfig:
@@ -34,6 +33,5 @@ class ForgottenMixConfig:
 
 class GlobalConfig:
     """システム全体・補充・浄化の共通設定"""
-    TOP_POOL_SIZE = 300
     HARD_DURATION_LIMIT = 10800  # 3時間 (物理除外)
     LIVE_PURGE_DURATION = 1800   # 30分 (物理除外)
