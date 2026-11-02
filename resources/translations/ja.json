@@ -176,6 +176,8 @@
   "main.sidebar.about": "このアプリについて",
   "about.description": "NavidromeライブラリからSpotifyライクなミックスを生成します。",
   "about.label.version": "バージョン:",
+  "about.label.python": "Python:",
+  "about.label.pyside": "PySide6:",
   "about.label.author": "制作者:",
   "about.label.license": "ライセンス:",
   "about.label.homepage": "公式サイト:",
