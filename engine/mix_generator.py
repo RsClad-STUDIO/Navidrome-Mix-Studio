@@ -15,17 +15,13 @@ from engine.factory.strategy_factory import StrategyFactory
 from services.mix_history_service import MixHistoryService
 
 class MixGenerator:
-    SUPPRESS_LIVE = True
-    SUPPRESS_INSTRUMENTAL = True
-    HARD_DURATION_LIMIT = 10800 
-
     def __init__(self, **kwargs) -> None:
         self._logger = logging.getLogger("MixGenerator")
         self._library_service = kwargs.get("library_service")
         self._history_service = kwargs.get("history_service")
         self._favorites_service = kwargs.get("favorites_service")
         
-        # ★バグ修正: blacklist_service を保持するように追加
+        # Apply the configured blacklist before scoring candidates.
         self._blacklist_service = kwargs.get("blacklist_service")
         
         self._mix_history_service = kwargs.get("mix_history_service") or MixHistoryService()
@@ -34,7 +30,7 @@ class MixGenerator:
         self._stats_collector = StatisticsCollector()
         self._strategy_factory = StrategyFactory()
         
-        # 統計保持用
+        # Last generation results exposed to the UI.
         self._last_stats = None
 
     def generate_mix(self, preset_name: str, limit: int = 25, **kwargs) -> List[Song]:
@@ -44,11 +40,11 @@ class MixGenerator:
         if self._favorites_service: 
             self._favorites_service.sync_favorites()
             
-        # 1. ライブラリ全取得
+        # 1. Fetch the full library, or the matching subset when a query is provided.
         query = str(kwargs.get("query") or "").strip()
         all_songs_raw = self._library_service.fetch_songs(query=query)
         
-        # ★バグ修正: 禁止リスト（Blocklist）による物理除外をここに配置
+        # Remove blacklisted tracks before building the recommendation pool.
         if self._blacklist_service:
             all_songs = [
                 s for s in all_songs_raw 
