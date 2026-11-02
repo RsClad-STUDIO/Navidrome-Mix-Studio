@@ -46,7 +46,7 @@ class MixGenerator:
             self._favorites_service.sync_favorites()
             
         # 1. ライブラリ全取得
-        all_songs_raw = self._library_service.fetch_songs(size=10000)
+        all_songs_raw = self._library_service.fetch_songs()
         
         # ★バグ修正: 禁止リスト（Blocklist）による物理除外をここに配置
         if self._blacklist_service:
