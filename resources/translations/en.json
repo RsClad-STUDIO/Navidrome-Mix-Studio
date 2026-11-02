@@ -15,7 +15,7 @@
   "main.sidebar.disconnected": "● Disconnected",
 
   "mix.group.strategy": "Selection Method",
-  "mix.group.version": "Exclude Filters",
+  "mix.group.version": "Exclusion Filters",
 
   "mix.label.strategy": "Method:",
   "mix.label.filter": "Search:",
@@ -58,8 +58,8 @@
   "statistics.library.albums": "Albums",
   "statistics.library.artists": "Artists",
 
-  "statistics.metrics.favorite_ratio": "Favorite Ratio",
-  "statistics.metrics.year_known": "Release Year Availability",
+  "statistics.metrics.favorite_ratio": "Favorite Track Ratio",
+  "statistics.metrics.year_known": "Tracks with Release Year",
   "statistics.metrics.version_tracks": "Alternate Version Tracks",
 
   "statistics.artist.distribution_title": "Artist Distribution",
@@ -82,8 +82,8 @@
   "strategy.method.favorite": "Favorites",
   "strategy.method.recent": "Recently Played",
   "strategy.method.discovery": "Discovery",
-  "strategy.method.similar_artist": "Similar Artist",
-  "strategy.method.similar_album": "Related Album",
+  "strategy.method.similar_artist": "Similar Artists",
+  "strategy.method.similar_album": "Related Albums",
   "strategy.method.random": "Random",
   "strategy.method.refill": "Auto Refill",
   "strategy.method.rotation": "History Rotation",
@@ -219,7 +219,7 @@
   "playlist_manager.dialog.cleanup.title": "Confirm Cleanup",
   "playlist_manager.dialog.cleanup.msg": "Delete {count} generated playlists older than {days} days?",
   "playlist_manager.type.manual": "Manual",
-  "playlist_manager.type.generated": "Mix Generated",
+  "playlist_manager.type.generated": "Generated Mix",
 
   "about.title": "About This App",
   "main.sidebar.about": "About",
