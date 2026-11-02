@@ -183,6 +183,8 @@ class TKey(StrEnum):
     SETTINGS_LABEL_AUTO_UPDATE = "settings.label.auto_update"
     SETTINGS_BTN_SAVE = "settings.button.save"
     SETTINGS_BTN_RESET = "settings.button.reset"
+    SETTINGS_ABOUT_TOOLTIP = "settings.about.tooltip"
+    SETTINGS_PROFILE_NEW_FORMAT = "settings.profile.new_format"
 
     # --- About Dialog ---
     ABOUT_TITLE = "about.title"
@@ -195,6 +197,7 @@ class TKey(StrEnum):
     ABOUT_BTN_VIEW_LICENSE = "about.button.view_license"
     ABOUT_BTN_VIEW_THIRD_PARTY = "about.button.view_third_party"
     ERROR_LICENSE_NOT_FOUND = "error.license_not_found"
+    ERROR_LICENSE_LOAD = "error.license_load"
 
     # --- Sidebar ---
     MAIN_SIDEBAR_ABOUT = "main.sidebar.about"
@@ -209,6 +212,7 @@ class TKey(StrEnum):
     DIALOG_SUCCESS_TITLE = "dialog.success.title"
     DIALOG_SUCCESS_SAVE = "dialog.success.save"
     DIALOG_DELETE_PLAYLIST_TITLE = "playlist_manager.dialog.delete.title"
+    PLAYLIST_MGR_NO_OLD_GENERATED = "playlist_manager.no_old_generated"
     DIALOG_DELETE_PLAYLIST_MSG = "playlist_manager.dialog.delete.msg"
     DIALOG_CLEANUP_TITLE = "playlist_manager.dialog.cleanup.title"
     DIALOG_CLEANUP_MSG = "playlist_manager.dialog.cleanup.msg"
