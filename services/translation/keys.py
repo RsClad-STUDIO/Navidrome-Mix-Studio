@@ -143,6 +143,9 @@ class TKey(StrEnum):
     EVAL_HIGH = "common.evaluation.high"
     EVAL_EXCELLENT = "common.evaluation.excellent"
     COMMON_NONE = "common.none"
+    COMMON_UNKNOWN_ARTIST = "common.unknown_artist"
+    COMMON_UNKNOWN_ALBUM = "common.unknown_album"
+    COMMON_UNKNOWN_YEAR = "common.unknown_year"
 
     # --- Settings ---
     SETTINGS_TITLE = "settings.title"
