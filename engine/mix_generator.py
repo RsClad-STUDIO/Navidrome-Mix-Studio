@@ -84,38 +84,20 @@ class MixGenerator:
             strat_songs, scored_list, limit, preset_name, days_map
         )
 
-        # 7. Final Shuffle & Statistics
+        # 7. Finalize playlist and collect statistics
         random.shuffle(final_songs)
         gen_time = int((time.perf_counter() - start_time) * 1000)
-        
+
         stats_data = self._stats_collector.collect(
-            preset_name, limit, all_songs, clean_pool, scored_list, 
-            final_songs, strat_songs, refill_songs, days_map, 
+            preset_name, limit, all_songs, clean_pool, scored_list,
+            final_songs, strat_songs, refill_songs, days_map,
             rotation_history, gen_time, context
         )
 
-
-        # 7. Final Shuffle & Statistics
-        random.shuffle(final_songs)
-        gen_time = int((time.perf_counter() - start_time) * 1000)
-        
-        stats_data = self._stats_collector.collect(
-            preset_name, limit, all_songs, clean_pool, scored_list, 
-            final_songs, strat_songs, refill_songs, days_map, 
-            rotation_history, gen_time, context
-        )
-
-        # ★バグ修正: 統計データだけでなく、曲ごとのスコア詳細（scored_list）も保存する
         self._last_stats = stats_data
-        self._last_scored_list = scored_list # この行を追加
-        
-        self._logger.info(f"\n{ReportFormatter.format(stats_data)}")
-        self._save_to_history(preset_name, now, final_songs)
+        self._last_scored_list = scored_list
 
-        # 統計データを保存
-        self._last_stats = stats_data
-
-        self._logger.info(f"\n{ReportFormatter.format(stats_data)}")
+        self._logger.info("\\n%s", ReportFormatter.format(stats_data))
         self._save_to_history(preset_name, now, final_songs)
         return final_songs
 
