@@ -1,42 +1,52 @@
 import logging
 from typing import List, Dict, Any
+
 from models.music_score import MusicScore
 
 logger = logging.getLogger("RotationCalculator")
 
 
 class RotationCalculator:
-    """スコアに履歴ベースの軽微なローテーション補正を適用する。"""
+    """選曲履歴に基づく軽微なスコア補正だけを担当する。"""
+
+    @staticmethod
+    def _penalty_rate(history_count: int) -> float:
+        if history_count <= 0:
+            return 0.0
+        if history_count == 1:
+            return 0.005
+        if history_count == 2:
+            return 0.010
+        if history_count == 3:
+            return 0.015
+        return 0.020
 
     @staticmethod
     def apply_rotation(
         scores: List[MusicScore],
         history_counts: Dict[str, int],
     ) -> List[MusicScore]:
-        # 補正前のスコア順で上位10曲を確定する。
+        """履歴回数に応じて減点。上位10曲のお気に入りは免除する。"""
+        # 再実行されても二重減点にならないよう、前回補正を戻す。
+        for score in scores:
+            score.total_score += score.rotation_penalty
+            score.rotation_penalty = 0.0
+            score.rotation_exempt = False
+
+        # 免除対象は補正前スコアで確定する。
         scores.sort(key=lambda item: item.total_score, reverse=True)
 
-        for index, music_score in enumerate(scores):
-            # 上位10曲のお気に入りはローテーション減点を免除する。
-            if index < 10 and music_score.favorite_score > 0:
-                music_score.rotation_penalty = 0.0
+        for index, score in enumerate(scores):
+            if index < 10 and score.favorite_score > 0:
+                score.rotation_exempt = True
                 continue
 
-            count = history_counts.get(music_score.song_id, 0)
-            if count <= 0:
-                penalty_rate = 0.0
-            elif count == 1:
-                penalty_rate = 0.005
-            elif count == 2:
-                penalty_rate = 0.010
-            elif count == 3:
-                penalty_rate = 0.015
-            else:
-                penalty_rate = 0.020
-
-            penalty_amount = music_score.total_score * penalty_rate
-            music_score.total_score -= penalty_amount
-            music_score.rotation_penalty = penalty_amount
+            rate = RotationCalculator._penalty_rate(
+                history_counts.get(score.song_id, 0)
+            )
+            penalty = score.total_score * rate
+            score.total_score -= penalty
+            score.rotation_penalty = penalty
 
         scores.sort(key=lambda item: item.total_score, reverse=True)
         return scores
@@ -46,40 +56,26 @@ class RotationCalculator:
         scores: List[MusicScore],
         history_counts: Dict[str, int],
     ) -> Dict[str, Any]:
-        """補正対象数・減点率・上位お気に入り免除数を集計する。"""
-        affected = [
-            score for score in scores
-            if history_counts.get(score.song_id, 0) > 0
+        """実際に適用した補正量からローテーション統計を算出する。"""
+        penalized = [score for score in scores if score.rotation_penalty > 0]
+        percentages = [
+            score.rotation_penalty
+            / (score.total_score + score.rotation_penalty)
+            * 100.0
+            for score in penalized
+            if score.total_score + score.rotation_penalty > 0
         ]
-
-        # apply_rotation() 後のスコア降順リストを前提とする。
         exempt_count = sum(
-            1
-            for score in scores[:10]
-            if score.favorite_score > 0
+            1 for score in scores
+            if score.rotation_exempt
             and history_counts.get(score.song_id, 0) > 0
         )
 
-        if not affected:
-            return {
-                "rotation_count": 0,
-                "avg_penalty": 0.0,
-                "max_penalty": 0.0,
-                "rotation_exempt": 0,
-            }
-
-        rates = []
-        for score in affected:
-            count = history_counts.get(score.song_id, 0)
-            rate = 0.5 if count == 1 else (
-                1.0 if count == 2 else (1.5 if count == 3 else 2.0)
-            )
-            rates.append(rate)
-
         return {
-            "rotation_count": len(affected),
-            "avg_penalty": sum(rates) / len(rates),
-            "max_penalty": max(rates),
+            "rotation_count": len(penalized),
+            "avg_penalty": (
+                sum(percentages) / len(percentages) if percentages else 0.0
+            ),
+            "max_penalty": max(percentages) if percentages else 0.0,
             "rotation_exempt": exempt_count,
         }
-
