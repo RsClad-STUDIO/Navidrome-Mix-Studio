@@ -1,4 +1,3 @@
-import random
 from typing import List, Dict, Any
 from .base_strategy import BaseStrategy
 from models.song import Song
