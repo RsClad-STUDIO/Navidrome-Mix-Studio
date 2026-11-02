@@ -53,5 +53,5 @@ class HistoryService:
     def _make_naive(dt: datetime) -> datetime:
         """タイムゾーン情報を除去して比較可能な naive datetime に変換する。"""
         if dt and dt.tzinfo is not None:
-            return dt.replace(tzinfo=None)
+            return dt.astimezone().replace(tzinfo=None)
         return dt
