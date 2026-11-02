@@ -46,7 +46,8 @@ class MixGenerator:
             self._favorites_service.sync_favorites()
             
         # 1. ライブラリ全取得
-        all_songs_raw = self._library_service.fetch_songs()
+        query = str(kwargs.get("query") or "").strip()
+        all_songs_raw = self._library_service.fetch_songs(query=query)
         
         # ★バグ修正: 禁止リスト（Blocklist）による物理除外をここに配置
         if self._blacklist_service:
@@ -67,12 +68,26 @@ class MixGenerator:
         )
 
         # 3. Strategy Execution (Get 2x buffer)
-        context = {"days_since_last_play": days_map, "suppress_instrumental": True, "suppress_live": True}
+        context = {
+            "days_since_last_play": days_map,
+            "suppress_instrumental": kwargs.get("suppress_instrumental", True),
+            "suppress_live": kwargs.get("suppress_live", False),
+            "suppress_remix": kwargs.get("suppress_remix", False),
+            "suppress_demo": kwargs.get("suppress_demo", False),
+            "suppress_acoustic": kwargs.get("suppress_acoustic", False),
+        }
         strategy = self._strategy_factory.create(preset_name)
         raw_candidates = strategy.generate(scored_list, days_map, limit * 2, clean_pool, context)
 
         # 4. Filter Execution
-        div_engine = DiversityEngine(suppress_instrumental=True, suppress_live=True, filter_versions=True)
+        div_engine = DiversityEngine(
+            suppress_instrumental=context["suppress_instrumental"],
+            suppress_live=context["suppress_live"],
+            suppress_remix=context["suppress_remix"],
+            suppress_demo=context["suppress_demo"],
+            suppress_acoustic=context["suppress_acoustic"],
+            filter_versions=True,
+        )
         unique_candidates = self._unique_by_id(raw_candidates)
         all_filtered = div_engine.apply(unique_candidates)
         
