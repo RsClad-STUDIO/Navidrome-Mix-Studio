@@ -8,6 +8,7 @@ from engine.preset_strategy import FavoritesStrategy
 from engine.filters.diversity_engine import DiversityEngine
 from engine.filters.version_filter import VersionFilter
 from engine.pipeline.purge_engine import PurgeEngine
+from engine.pipeline.rotation_calculator import RotationCalculator
 from engine.reporting.report_formatter import ReportFormatter
 from api.navidrome_client import NavidromeClient
 from models.song import Song
@@ -51,6 +52,34 @@ class CandidateGeneratorTests(unittest.TestCase):
     def test_zero_candidate_target_returns_empty_list(self):
         generator = CandidateGenerator()
         self.assertEqual(generator.generate_candidates([], target_limit=0), [])
+
+
+class RotationCalculatorTests(unittest.TestCase):
+    def test_penalty_rate_caps_and_protects_priority_tracks(self):
+        self.assertEqual(RotationCalculator.calculate_penalty_rate(10, False), 0.02)
+        self.assertEqual(RotationCalculator.calculate_penalty_rate(10, True), 0.0)
+        self.assertEqual(RotationCalculator.calculate_penalty_rate(-1, False), 0.0)
+
+    def test_rotation_budget_replaces_lowest_scoring_repeated_track(self):
+        old_low = Song(id="old-low", title="Old low", artist="A")
+        old_high = Song(id="old-high", title="Old high", artist="B")
+        fresh = Song(id="fresh", title="Fresh", artist="C")
+        score_details = {
+            old_low.id: {"song": old_low, "final_score": 10.0},
+            old_high.id: {"song": old_high, "final_score": 20.0},
+            fresh.id: {"song": fresh, "final_score": 15.0},
+        }
+
+        result = RotationCalculator.apply_rotation_budget(
+            candidate_selected=[old_low, old_high],
+            prev_mix_ids={old_low.id, old_high.id},
+            prev_mix_songs_map={old_low.id: old_low, old_high.id: old_high},
+            score_details=score_details,
+            limit=2,
+            max_budget=1,
+        )
+
+        self.assertEqual({song.id for song in result}, {"old-high", "fresh"})
 
 
 class LegacyFavoritesStrategyTests(unittest.TestCase):
