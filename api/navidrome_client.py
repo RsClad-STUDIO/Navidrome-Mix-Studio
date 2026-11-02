@@ -287,6 +287,44 @@ class NavidromeClient:
             self._logger.error(f"Error updating playlist: {e}")
             return None
 
+    def get_artists(self) -> List[Dict[str, Any]]:
+        """getArtistsのインデックスを平坦化してアーティスト一覧を返す。"""
+        response = self._request("getArtists")
+        artists_data = response.get("artists", {})
+        indexes = artists_data.get("index", [])
+        if isinstance(indexes, dict):
+            indexes = [indexes]
+
+        artists: List[Dict[str, Any]] = []
+        for index in indexes:
+            entries = index.get("artist", [])
+            if isinstance(entries, dict):
+                entries = [entries]
+            artists.extend(entries)
+
+        # サーバー実装によってはindexを介さずartistを返す場合に対応する。
+        direct_entries = artists_data.get("artist", [])
+        if isinstance(direct_entries, dict):
+            direct_entries = [direct_entries]
+        artists.extend(direct_entries)
+        return artists
+
+    def get_albums(self, size: int = 500) -> List[Dict[str, Any]]:
+        """getAlbumList2から指定件数のアルバム一覧を取得する。"""
+        if size <= 0:
+            return []
+
+        response = self._request(
+            "getAlbumList2",
+            {
+                "type": "alphabeticalByName",
+                "size": str(size),
+                "offset": "0",
+            },
+        )
+        albums = response.get("albumList2", {}).get("album", [])
+        return [albums] if isinstance(albums, dict) else albums
+
     def get_playlists(self) -> List[Dict[str, Any]]:
         """プレイリスト一覧を取得します。"""
         res = self._request("getPlaylists")
