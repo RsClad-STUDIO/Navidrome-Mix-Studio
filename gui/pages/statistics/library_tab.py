@@ -1,7 +1,7 @@
 """Phase 13.2: LibraryTab - Polished & Hardcode-Free."""
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QScrollArea, QGridLayout, QLabel, QTableWidgetItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QScrollArea, QGridLayout, QLabel, QTableWidgetItem, QMessageBox
 from .components import StatCard, ValueLabel, create_standard_table
 from services.translation import tr, TKey
 
@@ -70,7 +70,7 @@ class LibraryTab(QWidget):
         if not self._context.library_service: return
         self.setCursor(Qt.CursorShape.WaitCursor)
         try:
-            songs = self._context.library_service.fetch_songs(size=10000)
+            songs = self._context.library_service.fetch_songs()
             profile = self._context.mix_service.analyze_library(songs)
             self.lbl_songs_val.setText(str(profile.total_songs))
             self.lbl_albums_val.setText(str(profile.total_albums))
@@ -85,4 +85,6 @@ class LibraryTab(QWidget):
                 item = QTableWidgetItem(f"{ratio:.2f} %")
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.table.setItem(i, 1, item)
+        except Exception as e:
+            QMessageBox.warning(self, tr(TKey.STATS_LIB_OVERVIEW_TITLE), str(e))
         finally: self.unsetCursor()
