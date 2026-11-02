@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 class MixHistoryService:
-    """Mix生成履歴の管理サービス (Phase 10.0 対応)"""
+    """Mix生成履歴をJSONファイルで管理するサービス。"""
 
     MAX_HISTORY_LIMIT = 100
 
@@ -33,8 +33,10 @@ class MixHistoryService:
         record = {
             "timestamp": timestamp,
             "preset": preset,
-            "songs": songs
+            "songs": songs,
         }
+        if theme is not None:
+            record["theme"] = theme
         history.insert(0, record)
         history = history[:self.MAX_HISTORY_LIMIT]
         
