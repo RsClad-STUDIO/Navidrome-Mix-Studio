@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from engine.candidate_generator import CandidateGenerator
 from engine.mix_generator import MixGenerator
@@ -14,6 +14,7 @@ from api.navidrome_client import NavidromeClient
 from models.song import Song
 from models.music_score import MusicScore
 from services.history_service import HistoryService
+from models.history import HistoryEntry
 from services.library_analyzer import LibraryAnalyzer
 from services.favorites_service import FavoritesService
 from models.statistics_data import (
@@ -311,6 +312,19 @@ class TimestampNormalizationTests(unittest.TestCase):
         )
 
         self.assertEqual(song.last_played, expected)
+
+    def test_future_playback_timestamps_do_not_produce_negative_age(self):
+        now = datetime(2026, 11, 2, 12, 0, 0)
+        entry = HistoryEntry(
+            song_id="future-song",
+            title="Future",
+            artist="Artist",
+            played_at=now + timedelta(days=2),
+        )
+
+        days = HistoryService().prepare_context([entry], [], now)
+
+        self.assertEqual(days["future-song"], 0)
 
     def test_history_timestamp_is_converted_to_local_time_before_timezone_removal(self):
         aware_timestamp = datetime.fromisoformat("2026-11-02T12:00:00+00:00")
