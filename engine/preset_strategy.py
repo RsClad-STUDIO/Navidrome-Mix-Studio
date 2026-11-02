@@ -162,41 +162,35 @@ class FavoritesStrategy(PresetStrategy):
             weight_favorite=0.8, weight_recency=0.1, weight_popularity=0.1, weight_discovery=0.0, weight_random=0.1
         )
 
-# FavoritesStrategy の execute_selection 部分を以下のように修正
-    def execute_selection(self, candidates, limit, context) -> Tuple[List[Song], Dict]:
-        # 全お気に入り曲の抽出
-        starred_songs = [s for s in candidates if s.starred]
-        
-        # スコア順に並べて上位 limit 件（22~25曲）を選ぶ
-        # (RecommendationEngine側でもスコア順に並ぶが、ここで選出対象を確定させる)
-        starred_songs.sort(key=lambda s: s.play_count, reverse=True) # 暫定
-        
-        selected = starred_songs[:limit]
-        return selected, {"reasons": ["Top Favorites Pool"]}
+    def execute_selection(
+        self, candidates: List[Song], limit: int, context: Dict
+    ) -> Tuple[List[Song], Dict]:
+        """お気に入りを優先し、不足枠を非お気に入り曲で補完する。"""
+        if limit <= 0:
+            return [], {"favorite_count": 0, "non_favorite_count": 0}
 
-        # 推薦曲の選出
-        remaining_limit = limit - len(fav_selected)
-        non_fav_request_limit = min(remaining_limit, self.NON_FAVORITE_LIMIT)
+        starred_songs = [song for song in candidates if song.starred]
+        starred_songs.sort(key=lambda song: song.play_count, reverse=True)
+        fav_selected = starred_songs[:limit]
 
-        # contextからフィルター情報を引き継いで推薦を依頼
-        non_fav_selected = NonFavoriteRecommender.get_recommendations(
-            all_candidates=context.get("all_songs", []),
-            selected_favorites=fav_selected,
-            limit=non_fav_request_limit,
-            context=context
-        )
+        remaining_limit = min(limit - len(fav_selected), self.NON_FAVORITE_LIMIT)
+        non_fav_selected: List[Song] = []
+        if remaining_limit > 0:
+            non_fav_selected, _ = NonFavoriteRecommender.get_recommendations(
+                all_candidates=context.get("all_songs", candidates),
+                selected_favorites=fav_selected,
+                limit=remaining_limit,
+                context=context,
+            )
 
-        final_list = fav_selected + non_fav_selected
-        random.shuffle(final_list)
-
-        metrics = fav_metrics
-        metrics.update({
+        selected = fav_selected + non_fav_selected
+        random.shuffle(selected)
+        metrics = {
             "favorite_count": len(fav_selected),
-            "non_favorite_count": len(non_fav_selected)
-        })
-        return final_list, metrics
-
-# ... (DailyStrategy, DiscoveryStrategy などの実装も、_run_common_selection_flow を使う形に統一)
+            "non_favorite_count": len(non_fav_selected),
+            "total_selected": len(selected),
+        }
+        return selected, metrics
 
 
 class DailyStrategy(PresetStrategy):
