@@ -8,6 +8,8 @@ class VersionFilter:
         self.suppress_instrumental = config.get("suppress_instrumental", True)
         self.suppress_live = config.get("suppress_live", False)
         self.suppress_remix = config.get("suppress_remix", False)
+        self.suppress_demo = config.get("suppress_demo", False)
+        self.suppress_acoustic = config.get("suppress_acoustic", False)
 
     def is_suppressed(self, song: Song) -> bool:
         """除外設定に基づいて、その曲を弾くべきか判定します。"""
@@ -17,6 +19,10 @@ class VersionFilter:
         if self.suppress_live and v_info.get("live"):
             return True
         if self.suppress_remix and v_info.get("remix"):
+            return True
+        if self.suppress_demo and v_info.get("demo"):
+            return True
+        if self.suppress_acoustic and v_info.get("acoustic"):
             return True
         return False
 
