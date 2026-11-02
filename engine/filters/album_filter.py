@@ -1,4 +1,6 @@
 from collections import Counter
+from typing import List
+
 from models.song import Song
 from utils.title_normalizer import TitleNormalizer
 
