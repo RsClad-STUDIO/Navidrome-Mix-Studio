@@ -48,7 +48,7 @@ class MixGenerator:
         if self._favorites_service:
             self._favorites_service.sync_favorites()
 
-        all_songs_raw = self._library_service.fetch_songs(size=10000)
+        all_songs_raw = self._library_service.fetch_songs()
         if self._blacklist_service:
             all_songs = [
                 song for song in all_songs_raw
