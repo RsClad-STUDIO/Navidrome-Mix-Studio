@@ -30,6 +30,13 @@ class NavidromeClient:
             "f": "json",
         }
 
+    @staticmethod
+    def _as_list(value: Any) -> List[Dict[str, Any]]:
+        """Normalize Subsonic JSON fields that may be objects or arrays."""
+        if value is None:
+            return []
+        return value if isinstance(value, list) else [value]
+
     def test_connection(self) -> ConnectionResult:
         """Phase 11: 接続テストを実施する。"""
         if not self.server_url:
@@ -123,7 +130,11 @@ class NavidromeClient:
     def get_starred(self) -> Dict[str, Any]:
         """お気に入り（スター付き）データ（曲、アルバム、アーティスト）を取得します。"""
         res = self._request("getStarred")
-        return res.get("starred", {})
+        starred = res.get("starred", {})
+        return {
+            key: self._as_list(starred.get(key))
+            for key in ("song", "album", "artist")
+        }
 
     def get_starred_songs(self) -> List[Dict[str, Any]]:
         return self.get_starred().get("song", [])
@@ -217,20 +228,20 @@ class NavidromeClient:
 
         # 1. getRecentPlayed (最も標準的)
         res = self._request("getRecentPlayed", {"count": str(limit)})
-        recent = res.get("recentPlayed", {}).get("entry", [])
+        recent = self._as_list(res.get("recentPlayed", {}).get("entry"))
         if recent:
-            return recent if isinstance(recent, list) else [recent]
+            return recent
 
         # 2. getHistory (Scrobble 履歴)
         res = self._request("getHistory", {"size": str(limit)})
-        history = res.get("history", {}).get("item", [])
+        history = self._as_list(res.get("history", {}).get("item"))
         if history:
-            return history if isinstance(history, list) else [history]
+            return history
 
         # 3. getNowPlaying (現在再生中・直近)
         res = self._request("getNowPlaying")
-        now_playing = res.get("nowPlaying", {}).get("entry", [])
-        return now_playing if isinstance(now_playing, list) else []
+        now_playing = res.get("nowPlaying", {}).get("entry")
+        return self._as_list(now_playing)
 
     def create_playlist(self, name: str, song_ids: List[str]) -> Optional[Dict[str, Any]]:
         """新しいプレイリストを作成します。"""
@@ -328,7 +339,7 @@ class NavidromeClient:
     def get_playlists(self) -> List[Dict[str, Any]]:
         """プレイリスト一覧を取得します。"""
         res = self._request("getPlaylists")
-        return res.get("playlists", {}).get("playlist", [])
+        return self._as_list(res.get("playlists", {}).get("playlist"))
 
     def get_playlist(self, playlist_id: str) -> Dict[str, Any]:
         """特定のプレイリストの詳細（曲リスト含む）を取得します。"""
