@@ -4,6 +4,7 @@ from datetime import datetime
 
 from engine.candidate_generator import CandidateGenerator
 from engine.mix_generator import MixGenerator
+from engine.preset_strategy import FavoritesStrategy
 from engine.filters.diversity_engine import DiversityEngine
 from engine.filters.version_filter import VersionFilter
 from engine.pipeline.purge_engine import PurgeEngine
@@ -50,6 +51,25 @@ class CandidateGeneratorTests(unittest.TestCase):
     def test_zero_candidate_target_returns_empty_list(self):
         generator = CandidateGenerator()
         self.assertEqual(generator.generate_candidates([], target_limit=0), [])
+
+
+class LegacyFavoritesStrategyTests(unittest.TestCase):
+    def test_favorites_strategy_fills_available_non_favorite_slots(self):
+        songs = [
+            Song(id="favorite", title="Favorite", artist="A", starred=True, play_count=20),
+            Song(id="other-1", title="Other 1", artist="B", play_count=5),
+            Song(id="other-2", title="Other 2", artist="C", play_count=4),
+            Song(id="other-3", title="Other 3", artist="D", play_count=3),
+            Song(id="other-4", title="Other 4", artist="E", play_count=2),
+        ]
+
+        selected, metrics = FavoritesStrategy().execute_selection(
+            songs, limit=4, context={}
+        )
+
+        self.assertEqual(len(selected), 4)
+        self.assertEqual(metrics["favorite_count"], 1)
+        self.assertEqual(metrics["non_favorite_count"], 3)
 
 
 class NavidromeClientCollectionTests(unittest.TestCase):
