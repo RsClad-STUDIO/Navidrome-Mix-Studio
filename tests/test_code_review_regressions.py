@@ -322,7 +322,7 @@ class TimestampNormalizationTests(unittest.TestCase):
             played_at=now + timedelta(days=2),
         )
 
-        days = HistoryService().prepare_context([entry], [], now)
+        days = HistoryService(client=None).prepare_context([entry], [], now)
 
         self.assertEqual(days["future-song"], 0)
 
