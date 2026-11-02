@@ -3,7 +3,6 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Dict
 from models.library_profile import LibraryProfile
-from dataclasses import dataclass
 
 @dataclass
 class RecommendationWeights:
