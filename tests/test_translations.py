@@ -30,7 +30,7 @@ class TranslationResourceTests(unittest.TestCase):
                 self.assertIn(key.value, self.japanese)
 
     def test_translation_placeholders_match(self):
-        pattern = re.compile(r"\\{([A-Za-z_]\\w*)\\}")
+        pattern = re.compile(r"\{([A-Za-z_]\w*)\}")
         for key in self.english:
             with self.subTest(key=key):
                 english_placeholders = sorted(pattern.findall(self.english[key]))
