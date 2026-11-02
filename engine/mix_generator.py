@@ -2,8 +2,7 @@ import logging
 import random
 import time
 from datetime import datetime
-from typing import List, Dict, Any, Tuple
-from collections import Counter
+from typing import List, Dict, Any
 
 from models.song import Song
 from models.statistics_data import StatisticsData
