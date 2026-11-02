@@ -154,7 +154,7 @@ Navidrome Mix Studio is designed to run on modern Windows environments and requi
 | Component        | Requirement                        |
 | ---------------- | ---------------------------------- |
 | Operating System | Windows 10 / Windows 11 (64-bit)   |
-| Python           | 3.11 or later*(source build only)* |
+| Python           | 3.11 or later (source build only) |
 | Framework        | PySide6                            |
 | Music Server     | Navidrome                          |
 | API              | Subsonic API                       |
