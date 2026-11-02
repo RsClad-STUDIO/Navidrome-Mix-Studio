@@ -4,6 +4,7 @@ from datetime import datetime
 from engine.candidate_generator import CandidateGenerator
 from engine.filters.diversity_engine import DiversityEngine
 from engine.filters.version_filter import VersionFilter
+from engine.pipeline.purge_engine import PurgeEngine
 from engine.reporting.report_formatter import ReportFormatter
 from api.navidrome_client import NavidromeClient
 from models.song import Song
@@ -123,6 +124,26 @@ class VersionFilterTests(unittest.TestCase):
         song = Song(id="1", title="Song (Live)", artist="Artist")
         self.assertEqual(DiversityEngine.normalize_title(song.title), "song")
         self.assertTrue(DiversityEngine.is_version_variant(song))
+
+
+class PurgeEngineTests(unittest.TestCase):
+    def test_configured_demo_remix_and_acoustic_filters_are_applied(self):
+        cases = (
+            ("Song Demo", "suppress_demo"),
+            ("Song Remix", "suppress_remix"),
+            ("Song Acoustic", "suppress_acoustic"),
+        )
+        for title, setting in cases:
+            with self.subTest(title=title):
+                song = Song(id=title, title=title, artist="Artist")
+                self.assertTrue(PurgeEngine.should_purge(song, {setting: True}))
+                self.assertFalse(PurgeEngine.should_purge(song, {setting: False}))
+
+    def test_live_filter_is_disabled_unless_requested(self):
+        song = Song(id="live", title="Concert", artist="Artist", duration=2400)
+
+        self.assertFalse(PurgeEngine.should_purge(song, {"suppress_live": False}))
+        self.assertTrue(PurgeEngine.should_purge(song, {"suppress_live": True}))
 
 
 class InMemoryCache:
