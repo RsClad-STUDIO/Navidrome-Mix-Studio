@@ -1,5 +1,4 @@
 import math
-import logging
 from collections import Counter
 from typing import List, Dict, Any
 from models.song import Song
