@@ -63,6 +63,26 @@ class NavidromeClientCollectionTests(unittest.TestCase):
             ["1", "2"],
         )
 
+    def test_singleton_starred_song_is_normalized_to_a_list(self):
+        client = NavidromeClient()
+        client._request = lambda endpoint, params=None: {
+            "starred": {"song": {"id": "song-1"}, "album": None, "artist": None}
+        }
+
+        self.assertEqual(client.get_starred()["song"], [{"id": "song-1"}])
+        self.assertEqual(client.get_starred()["album"], [])
+
+    def test_singleton_now_playing_entry_is_preserved(self):
+        client = NavidromeClient()
+        responses = iter([
+            {},
+            {},
+            {"nowPlaying": {"entry": {"id": "song-1"}}},
+        ])
+        client._request = lambda endpoint, params=None, **kwargs: next(responses)
+
+        self.assertEqual(client.get_history(), [{"id": "song-1"}])
+
     def test_get_albums_handles_single_album_response(self):
         client = NavidromeClient()
         client._request = lambda endpoint, params=None: {
