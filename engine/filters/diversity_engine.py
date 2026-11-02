@@ -54,6 +54,18 @@ class DiversityEngine:
                 f"Album Filter Removed     : {len(self._removed_ids['album'])}\n"
                 f"Artist Filter Removed    : {len(self._removed_ids['artist'])}")
 
+    @staticmethod
+    def normalize_title(title: str) -> str:
+        """Return a normalized title for duplicate-version comparisons."""
+        from utils.title_normalizer import TitleNormalizer
+        return TitleNormalizer.normalize(title)
+
+    @staticmethod
+    def is_version_variant(song: Song) -> bool:
+        """Return whether a song title contains a recognized version marker."""
+        from utils.title_normalizer import TitleNormalizer
+        return any(TitleNormalizer.detect_versions(song.title).values())
+
     def is_suppressed_version(self, song: Song) -> bool:
         """
         互換性維持のためのメソッド。
