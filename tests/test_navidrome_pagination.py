@@ -32,7 +32,7 @@ class NavidromePaginationTests(unittest.TestCase):
         self.assertEqual(len(songs), 1000)
         self.assertEqual(
             [
-                call.kwargs["params"]["songOffset"]
+                call.args[1]["songOffset"]
                 for call in self.client._request.call_args_list
             ],
             ["0", "500", "1000"],
@@ -51,7 +51,7 @@ class NavidromePaginationTests(unittest.TestCase):
 
         self.assertEqual(len(songs), 600)
         self.assertEqual(self.client._request.call_count, 2)
-        second_params = self.client._request.call_args_list[1].kwargs["params"]
+        second_params = self.client._request.call_args_list[1].args[1]
         self.assertEqual(second_params["songOffset"], "500")
         self.assertEqual(second_params["songCount"], "100")
 
