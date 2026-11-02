@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 import random
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 from engine.weights import RecommendationWeights
 from models.song import Song
 from engine.pipeline.rotation_calculator import RotationCalculator
