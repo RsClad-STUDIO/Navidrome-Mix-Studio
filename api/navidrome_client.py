@@ -1,4 +1,4 @@
-"""Navidrome APIとの通信を担当するクライアントモジュール。 (Phase 13.3 対応版)"""
+"""Navidrome Subsonic APIとの通信を担当するクライアントモジュール。"""
 
 import logging
 import time
