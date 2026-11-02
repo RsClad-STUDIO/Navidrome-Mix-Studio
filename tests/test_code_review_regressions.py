@@ -5,6 +5,7 @@ from engine.candidate_generator import CandidateGenerator
 from engine.filters.diversity_engine import DiversityEngine
 from engine.filters.version_filter import VersionFilter
 from engine.reporting.report_formatter import ReportFormatter
+from api.navidrome_client import NavidromeClient
 from models.song import Song
 from services.history_service import HistoryService
 from models.statistics_data import (
@@ -43,6 +44,35 @@ class CandidateGeneratorTests(unittest.TestCase):
     def test_zero_candidate_target_returns_empty_list(self):
         generator = CandidateGenerator()
         self.assertEqual(generator.generate_candidates([], target_limit=0), [])
+
+
+class NavidromeClientCollectionTests(unittest.TestCase):
+    def test_get_artists_flattens_artist_indexes(self):
+        client = NavidromeClient()
+        client._request = lambda endpoint, params=None: {
+            "artists": {
+                "index": [
+                    {"name": "A", "artist": [{"id": "1", "name": "Artist A"}]},
+                    {"name": "B", "artist": {"id": "2", "name": "Artist B"}},
+                ]
+            }
+        }
+
+        self.assertEqual(
+            [artist["id"] for artist in client.get_artists()],
+            ["1", "2"],
+        )
+
+    def test_get_albums_handles_single_album_response(self):
+        client = NavidromeClient()
+        client._request = lambda endpoint, params=None: {
+            "albumList2": {"album": {"id": "album-1", "name": "Album"}}
+        }
+
+        self.assertEqual(
+            [album["id"] for album in client.get_albums(size=1)],
+            ["album-1"],
+        )
 
 
 class VersionFilterTests(unittest.TestCase):
