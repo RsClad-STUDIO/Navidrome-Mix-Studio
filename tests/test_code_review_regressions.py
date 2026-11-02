@@ -8,6 +8,8 @@ from engine.reporting.report_formatter import ReportFormatter
 from api.navidrome_client import NavidromeClient
 from models.song import Song
 from services.history_service import HistoryService
+from services.library_analyzer import LibraryAnalyzer
+from services.favorites_service import FavoritesService
 from models.statistics_data import (
     DiversityStats,
     RotationStats,
@@ -121,6 +123,52 @@ class VersionFilterTests(unittest.TestCase):
         song = Song(id="1", title="Song (Live)", artist="Artist")
         self.assertEqual(DiversityEngine.normalize_title(song.title), "song")
         self.assertTrue(DiversityEngine.is_version_variant(song))
+
+
+class InMemoryCache:
+    def __init__(self):
+        self.values = {}
+
+    def get(self, key):
+        return self.values.get(key)
+
+    def set(self, key, value):
+        self.values[key] = value
+        return True
+
+
+class CacheIsolationTests(unittest.TestCase):
+    def test_library_profile_cache_is_invalidated_when_library_changes(self):
+        cache = InMemoryCache()
+        analyzer = LibraryAnalyzer(cache_manager=cache)
+
+        first = analyzer.analyze_library(
+            [Song(id="1", title="One", artist="Artist A")]
+        )
+        second = analyzer.analyze_library(
+            [Song(id="2", title="Two", artist="Artist B")]
+        )
+
+        self.assertEqual(first.total_artists, 1)
+        self.assertEqual(second.total_artists, 1)
+        self.assertIn("Artist B", second.artist_distribution)
+        self.assertNotIn("Artist A", second.artist_distribution)
+
+    def test_favorites_cache_is_scoped_to_server_and_user(self):
+        cache = InMemoryCache()
+
+        class FakeClient:
+            def __init__(self, server_url, username):
+                self.server_url = server_url
+                self.username = username
+
+            def get_starred(self):
+                return {"song": [], "artist": [], "album": []}
+
+        FavoritesService(FakeClient("https://one.example", "user"), cache).sync_favorites()
+        FavoritesService(FakeClient("https://two.example", "user"), cache).sync_favorites()
+
+        self.assertEqual(len(cache.values), 2)
 
 
 class TimestampNormalizationTests(unittest.TestCase):
