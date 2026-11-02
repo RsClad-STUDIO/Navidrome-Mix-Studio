@@ -130,7 +130,7 @@ class NavidromeClient:
     def get_starred(self) -> Dict[str, Any]:
         """お気に入り（スター付き）データ（曲、アルバム、アーティスト）を取得します。"""
         res = self._request("getStarred")
-        starred = res.get("starred", {})
+        starred = res.get("starred") or {}
         return {
             key: self._as_list(starred.get(key))
             for key in ("song", "album", "artist")
@@ -228,19 +228,19 @@ class NavidromeClient:
 
         # 1. getRecentPlayed (最も標準的)
         res = self._request("getRecentPlayed", {"count": str(limit)})
-        recent = self._as_list(res.get("recentPlayed", {}).get("entry"))
+        recent = self._as_list((res.get("recentPlayed") or {}).get("entry"))
         if recent:
             return recent
 
         # 2. getHistory (Scrobble 履歴)
         res = self._request("getHistory", {"size": str(limit)})
-        history = self._as_list(res.get("history", {}).get("item"))
+        history = self._as_list((res.get("history") or {}).get("item"))
         if history:
             return history
 
         # 3. getNowPlaying (現在再生中・直近)
         res = self._request("getNowPlaying")
-        now_playing = res.get("nowPlaying", {}).get("entry")
+        now_playing = (res.get("nowPlaying") or {}).get("entry")
         return self._as_list(now_playing)
 
     def create_playlist(self, name: str, song_ids: List[str]) -> Optional[Dict[str, Any]]:
@@ -301,8 +301,8 @@ class NavidromeClient:
     def get_artists(self) -> List[Dict[str, Any]]:
         """getArtistsのインデックスを平坦化してアーティスト一覧を返す。"""
         response = self._request("getArtists")
-        artists_data = response.get("artists", {})
-        indexes = artists_data.get("index", [])
+        artists_data = response.get("artists") or {}
+        indexes = artists_data.get("index") or []
         if isinstance(indexes, dict):
             indexes = [indexes]
 
@@ -314,7 +314,7 @@ class NavidromeClient:
             artists.extend(entries)
 
         # サーバー実装によってはindexを介さずartistを返す場合に対応する。
-        direct_entries = artists_data.get("artist", [])
+        direct_entries = artists_data.get("artist") or []
         if isinstance(direct_entries, dict):
             direct_entries = [direct_entries]
         artists.extend(direct_entries)
@@ -333,13 +333,13 @@ class NavidromeClient:
                 "offset": "0",
             },
         )
-        albums = response.get("albumList2", {}).get("album", [])
+        albums = (response.get("albumList2") or {}).get("album") or []
         return [albums] if isinstance(albums, dict) else albums
 
     def get_playlists(self) -> List[Dict[str, Any]]:
         """プレイリスト一覧を取得します。"""
         res = self._request("getPlaylists")
-        return self._as_list(res.get("playlists", {}).get("playlist"))
+        return self._as_list((res.get("playlists") or {}).get("playlist"))
 
     def get_playlist(self, playlist_id: str) -> Dict[str, Any]:
         """特定のプレイリストの詳細（曲リスト含む）を取得します。"""
