@@ -5,6 +5,7 @@ import logging
 from typing import Any, Dict, List, Optional
 from models.song import Song
 from utils.title_normalizer import TitleNormalizer
+from services.translation import tr, TKey
 
 
 class AnalysisService:
@@ -17,7 +18,7 @@ class AnalysisService:
         """アルバムごとの収録楽曲数を集計します。"""
         counts: Counter[str] = Counter()
         for song in songs:
-            album_key = song.album or "Unknown Album"
+            album_key = song.album or tr(TKey.COMMON_UNKNOWN_ALBUM)
             counts[album_key] += 1
         return dict(counts)
 
@@ -37,7 +38,7 @@ class AnalysisService:
                 decade = f"{(s.year // 10) * 10}s"
                 era_counts[decade] += 1
             else:
-                era_counts["Unknown"] += 1
+                era_counts[tr(TKey.COMMON_UNKNOWN_YEAR)] += 1
 
         # バージョン割合
         version_count = sum(
