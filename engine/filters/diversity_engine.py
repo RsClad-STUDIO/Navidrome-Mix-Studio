@@ -34,7 +34,6 @@ class DiversityEngine:
                 step1.append(s)
         
         # 2. Album Filter
-        count_before_alb = len(step1)
         step2 = self._album_filter.apply(step1)
         removed_in_alb = [s for s in step1 if s not in step2]
         for s in removed_in_alb:
