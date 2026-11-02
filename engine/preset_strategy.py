@@ -88,8 +88,8 @@ class PresetStrategy(ABC):
             accum_weight = 0.0
             if has_history and s.id in decay_map:
                 accum_weight = decay_map.get(s.id, {}).get("accumulated_weight", 0.0)
-            is_top_favorite = (s.play_count >= max_play * 0.7) or (s.id in recent_set)
-            penalty_rate = RotationCalculator.calculate_penalty_rate(accum_weight, is_top_favorite)
+            is_priority_track = (s.play_count >= max_play * 0.7) or (s.id in recent_set)
+            penalty_rate = RotationCalculator.calculate_penalty_rate(accum_weight, is_priority_track)
             rotation_score = max(0.0, 100.0 * (1.0 - penalty_rate))
 
             # 最終スコアリング
