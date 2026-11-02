@@ -23,7 +23,7 @@ Designed for self-hosted music enthusiasts, Navidrome Mix Studio brings a modern
 
 ## Screenshots
 
-> **Application screenshots will be added here before the first public release.**
+
 
 
 | Main Window                                       | Statistics                                        |
@@ -189,8 +189,8 @@ No Python installation is required when using the packaged release.
 Clone the repository.
 
 ```bash
-git clone https://github.com/<username>/navidrome-mix-studio.git
-cd navidrome-mix-studio
+git clone https://github.com/RsClad-STUDIO/Navidrome-Mix-Studio.git
+cd Navidrome-Mix-Studio
 ```
 
 Install the required packages.
@@ -432,7 +432,7 @@ Design goals include:
 
 ## Internationalization
 
-The application includes a fully integrated localization system.
+The application includes a centralized localization system for its user interface.
 
 Key features include:
 
@@ -441,7 +441,7 @@ Key features include:
 - Centralized translation management
 - Easy addition of new languages
 
-Keeping all user-facing text outside the source code simplifies maintenance and future localization.
+Centralizing interface text in translation files simplifies maintenance and future localization.
 
 ---
 
