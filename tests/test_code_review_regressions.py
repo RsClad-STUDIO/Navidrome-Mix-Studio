@@ -1,10 +1,12 @@
 import unittest
+from datetime import datetime
 
 from engine.candidate_generator import CandidateGenerator
 from engine.filters.diversity_engine import DiversityEngine
 from engine.filters.version_filter import VersionFilter
 from engine.reporting.report_formatter import ReportFormatter
 from models.song import Song
+from services.history_service import HistoryService
 from models.statistics_data import (
     DiversityStats,
     RotationStats,
@@ -69,6 +71,24 @@ class VersionFilterTests(unittest.TestCase):
         song = Song(id="1", title="Song (Live)", artist="Artist")
         self.assertEqual(DiversityEngine.normalize_title(song.title), "song")
         self.assertTrue(DiversityEngine.is_version_variant(song))
+
+
+class TimestampNormalizationTests(unittest.TestCase):
+    def test_song_timestamp_is_converted_to_local_time_before_timezone_removal(self):
+        raw_timestamp = "2026-11-02T12:00:00+00:00"
+        expected = datetime.fromisoformat(raw_timestamp).astimezone().replace(tzinfo=None)
+
+        song = Song.from_dict(
+            {"id": "1", "title": "Song", "artist": "Artist", "lastPlayed": raw_timestamp}
+        )
+
+        self.assertEqual(song.last_played, expected)
+
+    def test_history_timestamp_is_converted_to_local_time_before_timezone_removal(self):
+        aware_timestamp = datetime.fromisoformat("2026-11-02T12:00:00+00:00")
+        expected = aware_timestamp.astimezone().replace(tzinfo=None)
+
+        self.assertEqual(HistoryService._make_naive(aware_timestamp), expected)
 
 
 class ReportFormatterTests(unittest.TestCase):
