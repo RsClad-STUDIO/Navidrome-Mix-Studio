@@ -8,6 +8,7 @@ from cache.cache_manager import CacheManager
 from models.library_profile import LibraryProfile
 from models.song import Song
 from utils.title_normalizer import TitleNormalizer
+from services.translation import tr, TKey
 
 
 class LibraryAnalyzer:
@@ -68,8 +69,8 @@ class LibraryAnalyzer:
         live_count = 0
 
         for s in songs:
-            artist = s.artist or "Unknown Artist"
-            album = s.album or "Unknown Album"
+            artist = s.artist or tr(TKey.COMMON_UNKNOWN_ARTIST)
+            album = s.album or tr(TKey.COMMON_UNKNOWN_ALBUM)
             artist_counts[artist] += 1
             album_counts[album] += 1
 
