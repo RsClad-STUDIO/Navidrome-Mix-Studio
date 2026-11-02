@@ -5,6 +5,7 @@ from models.music_score import MusicScore
 from engine.filters.album_filter import AlbumFilter
 from engine.filters.artist_filter import ArtistFilter
 from engine.filters.version_filter import VersionFilter
+from engine.strategies.strategy_config import DiscoveryMixConfig, ForgottenMixConfig
 
 
 class RefillEngine:
@@ -42,15 +43,15 @@ class RefillEngine:
                 continue
 
             if "Discovery" in preset_name:
-                eligible = not song.starred and music_score.play_count < 3
+                eligible = not song.starred and music_score.play_count < DiscoveryMixConfig.PLAY_COUNT_THRESHOLD_INITIAL
                 source_tag = "discovery"
             elif "Forgotten" in preset_name:
                 days_unplayed = days_map.get(music_score.song_id, 999)
                 if song.starred:
-                    eligible = days_unplayed > 30
+                    eligible = days_unplayed > ForgottenMixConfig.RECENT_DAYS_LIMIT
                     source_tag = "forgotten_favorite"
                 else:
-                    eligible = music_score.play_count >= 1 and days_unplayed > 60
+                    eligible = music_score.play_count >= ForgottenMixConfig.PLAY_COUNT_MIN and days_unplayed > ForgottenMixConfig.NON_FAVORITE_DAYS_LIMIT
                     source_tag = "recent"
             else:
                 eligible = not song.starred and music_score.play_count >= 1
