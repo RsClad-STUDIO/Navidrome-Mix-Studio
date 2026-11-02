@@ -72,9 +72,17 @@ class NavidromeClient:
         except Exception as e:
             return ConnectionResult(success=False, error_message=f"Error: {str(e)}")
 
-    def _request(self, endpoint: str, params: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        """汎用リクエストメソッド。404等の通信エラー時に例外で止めず安全に処理。"""
+    def _request(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, str]] = None,
+        *,
+        raise_on_error: bool = False,
+    ) -> Dict[str, Any]:
+        """汎用リクエスト。通常は安全に空応答へ変換し、完全取得処理では例外を通知する。"""
         if not self.server_url:
+            if raise_on_error:
+                raise RuntimeError("Navidrome server URL is empty")
             return {}
         url = f"{self.server_url}/rest/{endpoint}"
         req_params = self._get_base_params()
@@ -82,21 +90,34 @@ class NavidromeClient:
             req_params.update(params)
 
         try:
-            resp = requests.get(url, params=req_params, timeout=10)
+            resp = requests.get(url, params=req_params, timeout=30)
             if resp.status_code == 404:
-                self._logger.debug(f"[API] 404 Not Found: {endpoint}")
+                message = f"Navidrome API endpoint not found: {endpoint}"
+                if raise_on_error:
+                    raise RuntimeError(message)
+                self._logger.debug("[API] 404 Not Found: %s", endpoint)
                 return {}
             resp.raise_for_status()
             data = resp.json()
             sub = data.get("subsonic-response", {})
             if sub.get("status") == "ok":
                 return sub
-            else:
-                err = sub.get("error", {})
-                self._logger.error(f"Navidrome API Error ({endpoint}): {err.get('message')}")
-                return {}
+
+            err = sub.get("error", {})
+            message = (
+                f"Navidrome API Error ({endpoint}): "
+                f"{err.get('message', 'Unknown API error')}"
+            )
+            if raise_on_error:
+                raise RuntimeError(message)
+            self._logger.error(message)
+            return {}
         except Exception as e:
-            self._logger.warning(f"Failed HTTP request to {endpoint}: {e}")
+            if raise_on_error:
+                raise RuntimeError(
+                    f"Failed HTTP request to {endpoint}: {e}"
+                ) from e
+            self._logger.warning("Failed HTTP request to %s: %s", endpoint, e)
             return {}
 
     def get_starred(self) -> Dict[str, Any]:
@@ -114,20 +135,80 @@ class NavidromeClient:
         return self.get_starred().get("artist", [])
 
     def search_songs(
-        self, query: str = "", count: int = 1000, size: Optional[int] = None
+        self,
+        query: str = "",
+        count: Optional[int] = None,
+        size: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """曲一覧を取得します（search3 API利用）。"""
-        limit = size if size is not None else count
-        res = self._request("search3", {"query": query, "songCount": str(limit)})
-        search_res = res.get("searchResult3", {})
-        return search_res.get("song", [])
+        """search3をオフセットページングし、指定がなければ全曲を取得する。
+
+        count/sizeは後方互換用の総取得上限。APIへの1回の要求は最大500曲。
+        """
+        total_limit = count if count is not None else size
+        if total_limit is not None and total_limit <= 0:
+            return []
+
+        page_size = 500
+        offset = 0
+        songs: List[Dict[str, Any]] = []
+        seen_ids = set()
+
+        while total_limit is None or len(songs) < total_limit:
+            request_size = (
+                page_size
+                if total_limit is None
+                else min(page_size, total_limit - len(songs))
+            )
+            response = self._request(
+                "search3",
+                {
+                    "query": query,
+                    "songCount": str(request_size),
+                    "songOffset": str(offset),
+                },
+                raise_on_error=True,
+            )
+            search_result = response.get("searchResult3", {})
+            page = search_result.get("song", [])
+            if isinstance(page, dict):
+                page = [page]
+            if not page:
+                break
+
+            added = 0
+            for song in page:
+                song_id = str(song.get("id", ""))
+                if not song_id or song_id not in seen_ids:
+                    songs.append(song)
+                    if song_id:
+                        seen_ids.add(song_id)
+                    added += 1
+
+            if added == 0:
+                raise RuntimeError(
+                    "Navidrome search3 pagination did not advance; "
+                    "the server may be ignoring songOffset."
+                )
+
+            offset += len(page)
+            if len(page) < request_size:
+                break
+
+        self._logger.info(
+            "Fetched %s songs from Navidrome (query=%r)",
+            len(songs), query
+        )
+        return songs
 
     def get_songs(
-        self, query: str = "", size: int = 1000, count: Optional[int] = None
+        self,
+        query: str = "",
+        size: Optional[int] = None,
+        count: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """search_songs への互換エイリアスメソッド。"""
-        limit = count if count is not None else size
-        return self.search_songs(query=query, count=limit)
+        """search_songs互換API。上限未指定時は全曲を取得する。"""
+        total_limit = count if count is not None else size
+        return self.search_songs(query=query, count=total_limit)
 
     def get_history(
         self, count: int = 500, size: Optional[int] = None
