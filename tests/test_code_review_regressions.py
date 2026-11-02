@@ -1,13 +1,16 @@
 import unittest
+from unittest.mock import Mock, patch
 from datetime import datetime
 
 from engine.candidate_generator import CandidateGenerator
+from engine.mix_generator import MixGenerator
 from engine.filters.diversity_engine import DiversityEngine
 from engine.filters.version_filter import VersionFilter
 from engine.pipeline.purge_engine import PurgeEngine
 from engine.reporting.report_formatter import ReportFormatter
 from api.navidrome_client import NavidromeClient
 from models.song import Song
+from models.music_score import MusicScore
 from services.history_service import HistoryService
 from services.library_analyzer import LibraryAnalyzer
 from services.favorites_service import FavoritesService
@@ -124,6 +127,63 @@ class VersionFilterTests(unittest.TestCase):
         song = Song(id="1", title="Song (Live)", artist="Artist")
         self.assertEqual(DiversityEngine.normalize_title(song.title), "song")
         self.assertTrue(DiversityEngine.is_version_variant(song))
+
+
+class MixGeneratorConfigurationTests(unittest.TestCase):
+    def test_search_query_and_version_options_reach_the_pipeline(self):
+        song = Song(id="song-1", title="Song", artist="Artist")
+        score = MusicScore(song_id=song.id, title=song.title, artist=song.artist)
+        score.song = song
+
+        library_service = Mock()
+        library_service.fetch_songs.return_value = [song]
+        history_service = Mock()
+        history_service.fetch_history.return_value = []
+        history_service.prepare_context.return_value = {}
+        mix_history_service = Mock()
+
+        generator = MixGenerator(
+            library_service=library_service,
+            history_service=history_service,
+            mix_history_service=mix_history_service,
+        )
+        generator._pipeline = Mock()
+        generator._pipeline.execute.return_value = ([song], [score], {})
+        strategy = Mock()
+        strategy.generate.return_value = [song]
+        generator._strategy_factory = Mock()
+        generator._strategy_factory.create.return_value = strategy
+        generator._refill_engine = Mock()
+        generator._refill_engine.refill.return_value = ([song], [])
+        generator._stats_collector = Mock()
+        generator._stats_collector.collect.return_value = object()
+
+        with patch("engine.mix_generator.DiversityEngine") as diversity_factory:
+            with patch("engine.mix_generator.ReportFormatter.format", return_value="report"):
+                generator.generate_mix(
+                    "Daily Mix",
+                    limit=1,
+                    query="ambient",
+                    suppress_instrumental=True,
+                    suppress_live=False,
+                    suppress_remix=True,
+                    suppress_demo=True,
+                    suppress_acoustic=False,
+                )
+
+        library_service.fetch_songs.assert_called_once_with(query="ambient")
+        diversity_factory.assert_called_once_with(
+            suppress_instrumental=True,
+            suppress_live=False,
+            suppress_remix=True,
+            suppress_demo=True,
+            suppress_acoustic=False,
+            filter_versions=True,
+        )
+        self.assertEqual(
+            generator._pipeline.execute.call_args.args[4]["suppress_demo"],
+            True,
+        )
 
 
 class PurgeEngineTests(unittest.TestCase):
