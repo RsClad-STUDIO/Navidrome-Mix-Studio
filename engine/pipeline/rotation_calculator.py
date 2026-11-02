@@ -30,10 +30,10 @@ class RotationCalculator:
 
     @staticmethod
     def calculate_penalty_rate(
-        accumulated_weight: float, is_top_favorite: bool
+        accumulated_weight: float, is_priority_track: bool
     ) -> float:
         """Calculate a capped rotation penalty, protecting high-priority tracks."""
-        if is_top_favorite:
+        if is_priority_track:
             return 0.0
         return min(0.02, max(0.0, accumulated_weight) * 0.005)
 
