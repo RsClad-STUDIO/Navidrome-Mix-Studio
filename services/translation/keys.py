@@ -193,6 +193,8 @@ class TKey(StrEnum):
     ABOUT_TITLE = "about.title"
     ABOUT_DESCRIPTION = "about.description"
     ABOUT_LABEL_VERSION = "about.label.version"
+    ABOUT_LABEL_PYTHON = "about.label.python"
+    ABOUT_LABEL_PYSIDE = "about.label.pyside"
     ABOUT_LABEL_AUTHOR = "about.label.author"
     ABOUT_LABEL_LICENSE = "about.label.license"
     ABOUT_LABEL_HOMEPAGE = "about.label.homepage"
