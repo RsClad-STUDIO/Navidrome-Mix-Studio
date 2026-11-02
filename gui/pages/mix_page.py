@@ -8,9 +8,6 @@ from PySide6.QtWidgets import (
     QMessageBox, QPushButton, QSpinBox, QTableView, QVBoxLayout, QWidget,
 )
 
-from engine.preset_strategy import (
-    DailyStrategy, DiscoveryStrategy, FavoritesStrategy, ForgottenFavoritesStrategy,
-)
 from gui.models.mix_table_model import MixTableModel
 from models.song import Song
 from services.translation import tr, TKey, TranslationManager
@@ -22,11 +19,12 @@ if TYPE_CHECKING:
 class MixPage(QWidget):
     """選曲戦略の切り替えとMix生成を行うメイン画面。"""
 
+    # UI uses stable preset IDs only; execution is handled by MixGenerator's StrategyFactory.
     STRATEGIES = [
-        DailyStrategy(),
-        FavoritesStrategy(),
-        DiscoveryStrategy(),
-        ForgottenFavoritesStrategy(),
+        "Daily Mix",
+        "Favorites Mix",
+        "Discovery Mix",
+        "Forgotten Favorites",
     ]
 
     def __init__(self, context: "AppContext") -> None:
@@ -50,8 +48,8 @@ class MixPage(QWidget):
         
         self.preset_combo = QComboBox()
         self.preset_combo.setMinimumWidth(180)
-        for s in self.STRATEGIES:
-            self.preset_combo.addItem("", userData=s.name)
+        for strategy_id in self.STRATEGIES:
+            self.preset_combo.addItem("", userData=strategy_id)
         combo_layout.addWidget(self.preset_combo)
 
         self.lbl_filter = QLabel()
