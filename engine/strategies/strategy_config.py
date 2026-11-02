@@ -10,7 +10,7 @@ class DailyMixConfig:
     # 残りは自動的に Discovery (約0.12)
 
     # 判定閾値
-    RECENT_DAYS_THRESHOLD = 14
+    RECENT_DAYS_THRESHOLD = 30  # 現行DailyStrategyの動作を維持
     PAST_PLAY_COUNT_MIN = 15
     PAST_DAYS_THRESHOLD = 60
     CORE_POOL_SIZE = 10
@@ -30,6 +30,7 @@ class ForgottenMixConfig:
     """Forgotten Favorites 用のパラメータ"""
     RECENT_DAYS_LIMIT = 30
     PLAY_COUNT_MIN = 1
+    NON_FAVORITE_DAYS_LIMIT = 60
 
 class GlobalConfig:
     """システム全体・補充・浄化の共通設定"""
