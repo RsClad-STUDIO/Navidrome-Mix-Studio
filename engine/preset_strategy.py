@@ -1,7 +1,6 @@
 """選曲戦略（Strategy Pattern）および実行ログを出力するモジュール。"""
 
 from abc import ABC, abstractmethod
-import logging
 import random
 from typing import Dict, List, Set, Tuple
 from engine.weights import RecommendationWeights
@@ -28,7 +27,7 @@ class PresetStrategy(ABC):
     @abstractmethod
     def execute_selection(
         self, candidates: List[Song], limit: int, context: Dict
-    ) -> Tuple[List[Song], Dict[str, int]]:
+    ) -> Tuple[List[Song], Dict[str, Any]]:
         pass
 
     def _run_common_selection_flow(
@@ -40,9 +39,8 @@ class PresetStrategy(ABC):
         max_budget: int
     ) -> Tuple[List[Song], Dict]:
         """
-        全戦略で共通して使用する選出・Rotation・レポート生成の標準フロー。
+        戦略間で共有する選出・Rotation・メトリクス生成の処理。
         """
-        logger = logging.getLogger(self.__class__.__name__)
         
         if not pool:
             return [], {"error": "Empty pool"}
@@ -89,7 +87,7 @@ class PresetStrategy(ABC):
             # Rotation計算 (Phase 10: 追い出しロジック)
             accum_weight = 0.0
             if has_history and s.id in decay_map:
-                accum_weight = decay_map[s.id]["accumulated_weight"]
+                accum_weight = decay_map.get(s.id, {}).get("accumulated_weight", 0.0)
             is_top_favorite = (s.play_count >= max_play * 0.7) or (s.id in recent_set)
             penalty_rate = RotationCalculator.calculate_penalty_rate(accum_weight, is_top_favorite)
             rotation_score = max(0.0, 100.0 * (1.0 - penalty_rate))
@@ -135,7 +133,6 @@ class PresetStrategy(ABC):
         random.shuffle(final_list)
 
         # メトリクス生成 (略)
-        selected_ids = {s.id for s in final_list}
         in_songs = [f"{s.title} - {s.artist}" for s in final_list if s.id not in prev_mix_ids]
         metrics = {
             "rotation_in_count": len(in_songs),
@@ -145,8 +142,6 @@ class PresetStrategy(ABC):
 
         return final_list, metrics
 
-
-# ... (冒頭のインポートは維持)
 
 class FavoritesStrategy(PresetStrategy):
     """お気に入りを中心とし、少量の推薦曲を加えたMix戦略。"""
