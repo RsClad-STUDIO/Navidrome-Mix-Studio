@@ -10,6 +10,7 @@ from engine.candidate_generator import CandidateGenerator
 from engine.filters.artist_filter import ArtistFilter
 from engine.filters.album_filter import AlbumFilter
 from engine.filters.diversity_engine import DiversityEngine
+from engine.filters.version_filter import VersionFilter
 from engine.mix_generator import MixGenerator
 from engine.pipeline.purge_engine import PurgeEngine
 from engine.pipeline.refill_engine import RefillEngine
@@ -162,9 +163,58 @@ class RegressionFixTests(unittest.TestCase):
         with patch("engine.mix_generator.DiversityEngine") as diversity_factory:
             diversity_factory.return_value.apply.return_value = [song]
             with patch("engine.mix_generator.ReportFormatter.format", return_value=""):
-                generator.generate_mix("Daily Mix", limit=1, query="Ambient")
+                generator.generate_mix(
+                    "Daily Mix",
+                    limit=1,
+                    query="Ambient",
+                    suppress_remix=True,
+                    suppress_demo=True,
+                )
 
         library_service.fetch_songs.assert_called_once_with(query="Ambient")
+        self.assertTrue(generator._pipeline.execute.call_args.args[4]["suppress_demo"])
+        diversity_factory.assert_called_once_with(
+            suppress_instrumental=True,
+            suppress_live=False,
+            suppress_remix=True,
+            suppress_demo=True,
+            suppress_acoustic=False,
+            filter_versions=True,
+            target_size=1,
+            available_album_count=1,
+            available_artist_count=1,
+        )
+
+    def test_candidate_generator_returns_empty_for_zero_target(self):
+        generator = CandidateGenerator()
+        self.assertEqual(generator.generate_candidates([], target_limit=0), [])
+
+    def test_version_filter_honors_demo_and_acoustic_options(self):
+        version_filter = VersionFilter({
+            "suppress_demo": True,
+            "suppress_acoustic": True,
+        })
+        self.assertTrue(version_filter.is_suppressed(
+            Song(id="demo", title="Song Demo", artist="Artist")
+        ))
+        self.assertTrue(version_filter.is_suppressed(
+            Song(id="acoustic", title="Song Acoustic", artist="Artist")
+        ))
+        self.assertFalse(version_filter.is_suppressed(
+            Song(id="normal", title="Song", artist="Artist")
+        ))
+
+    def test_purge_engine_applies_demo_remix_and_acoustic_options(self):
+        cases = (
+            ("Song Demo", "suppress_demo"),
+            ("Song Remix", "suppress_remix"),
+            ("Song Acoustic", "suppress_acoustic"),
+        )
+        for title, setting in cases:
+            with self.subTest(title=title):
+                song = Song(id=title, title=title, artist="Artist", duration=240)
+                self.assertTrue(PurgeEngine.should_purge(song, {setting: True}))
+                self.assertFalse(PurgeEngine.should_purge(song, {setting: False}))
 
     def test_live_filter_remains_opt_in_by_default(self):
         song = Song(
@@ -618,6 +668,34 @@ class RegressionFixTests(unittest.TestCase):
         keys = [call.args[0] for call in cache.get.call_args_list]
         self.assertEqual(len(keys), 2)
         self.assertNotEqual(keys[0], keys[1])
+
+    def test_library_profile_cache_is_invalidated_when_library_changes(self):
+        class MemoryCache:
+            def __init__(self):
+                self.values = {}
+
+            def get(self, key):
+                return self.values.get(key)
+
+            def set(self, key, value):
+                self.values[key] = value
+
+        cache = MemoryCache()
+        analyzer = LibraryAnalyzer(
+            cache_manager=cache,
+            cache_namespace="https://server.example|user",
+        )
+        analyzer.analyze_library([
+            Song(id="1", title="Song", artist="Artist A"),
+        ])
+        updated = analyzer.analyze_library([
+            Song(id="1", title="Song", artist="Artist B"),
+            Song(id="2", title="Other", artist="Artist C"),
+        ])
+        self.assertEqual(updated.total_songs, 2)
+        self.assertEqual(updated.total_artists, 2)
+        self.assertIn("Artist B", updated.artist_distribution)
+        self.assertNotIn("Artist A", updated.artist_distribution)
 
     def test_library_profile_cache_keys_are_server_scoped(self):
         first = LibraryAnalyzer(cache_namespace="server-one|user")
