@@ -6,7 +6,7 @@ on:
       - integration/main-reconciliation
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   merge-audit:
@@ -16,15 +16,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Report merge conflicts against main
+      - name: Create isolated merge preview
         shell: bash
         run: |
           git fetch origin main
           set +e
-          git merge-tree --write-tree --name-only origin/main HEAD
+          merge_output="$(git merge-tree --write-tree --name-only origin/main HEAD)"
           status=$?
           set -e
+          printf '%s\n' "$merge_output"
           echo "merge-tree exit code: $status"
           if [ "$status" -gt 1 ]; then
             exit "$status"
           fi
+          tree_sha="$(printf '%s\n' "$merge_output" | head -n 1)"
+          merge_sha="$(printf 'Temporary merge preview of main into PR4 branch\n' | git commit-tree "$tree_sha" -p HEAD -p origin/main)"
+          git push origin "$merge_sha:refs/heads/integration/merge-preview"
