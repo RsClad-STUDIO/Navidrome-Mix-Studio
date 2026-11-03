@@ -192,6 +192,12 @@ class MixPage(QWidget):
             self.table_model.set_songs(self._current_songs)
             self.table_view.viewport().update()
             self.btn_save.setEnabled(len(self._current_songs) > 0)
+            if self._context.mix_service.was_last_mix_history_duplicate():
+                QMessageBox.information(
+                    self,
+                    tr(TKey.DIALOG_SUCCESS_TITLE),
+                    tr(TKey.MIX_HISTORY_DUPLICATE_NOTICE),
+                )
         except Exception as e:
             QMessageBox.critical(self, tr(TKey.DIALOG_ERROR_TITLE), tr(TKey.DIALOG_ERROR_GEN_FAILED, error=str(e)))
         finally:
