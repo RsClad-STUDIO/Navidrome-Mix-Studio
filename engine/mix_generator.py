@@ -48,7 +48,8 @@ class MixGenerator:
         if self._favorites_service:
             self._favorites_service.sync_favorites()
 
-        all_songs_raw = self._library_service.fetch_songs()
+        raw_query = str(kwargs.get("query") or "").strip()
+        all_songs_raw = self._library_service.fetch_songs(query=raw_query)
         if self._blacklist_service:
             all_songs = [
                 song for song in all_songs_raw
@@ -80,7 +81,7 @@ class MixGenerator:
 
         # 検索欄が空なら従来どおり全候補を使用します。
         # 入力がある場合は曲名・アーティスト名・アルバム名の部分一致で候補を限定します。
-        query = " ".join(str(kwargs.get("query") or "").casefold().split())
+        query = " ".join(raw_query.casefold().split())
         if query:
             def matches_query(song: Song) -> bool:
                 searchable = " ".join(
