@@ -270,6 +270,153 @@ class RegressionFixTests(unittest.TestCase):
         self.assertTrue(all(song.play_count == 0 for song in refilled))
         self.assertEqual(len({song.id for song in final}), 25)
 
+    def test_daily_mix_can_refill_unplayed_tracks_when_history_is_partial(self):
+        existing = Song(
+            id="daily-existing",
+            title="Existing Track",
+            artist="Existing Artist",
+            album="Existing Album",
+            play_count=5,
+        )
+        scores = [MusicScore(
+            song_id=existing.id,
+            title=existing.title,
+            artist=existing.artist,
+            album=existing.album,
+            play_count=5,
+            song=existing,
+            total_score=90.0,
+        )]
+        for index in range(4):
+            song = Song(
+                id=f"daily-unplayed-{index}",
+                title=f"Daily Unplayed {index}",
+                artist=f"Daily Artist {index}",
+                album=f"Daily Album {index}",
+                play_count=0,
+            )
+            scores.append(MusicScore(
+                song_id=song.id,
+                title=song.title,
+                artist=song.artist,
+                album=song.album,
+                play_count=0,
+                song=song,
+                total_score=float(40 - index),
+            ))
+
+        final, refilled = RefillEngine.refill(
+            [existing],
+            scores,
+            5,
+            "Daily Mix",
+            {"daily-existing": 2},
+            filter_config={},
+            history_available=True,
+            history_empty=False,
+        )
+
+        self.assertEqual(len(final), 5)
+        self.assertEqual(len(refilled), 4)
+        self.assertTrue(all(song.play_count == 0 for song in refilled))
+
+    def test_discovery_refill_accepts_never_played_tracks(self):
+        existing = Song(
+            id="discovery-existing",
+            title="Existing Discovery",
+            artist="Existing Artist",
+            album="Existing Album",
+            play_count=1,
+        )
+        scores = [MusicScore(
+            song_id=existing.id,
+            title=existing.title,
+            artist=existing.artist,
+            album=existing.album,
+            play_count=1,
+            song=existing,
+            total_score=90.0,
+        )]
+        for index in range(4):
+            song = Song(
+                id=f"discovery-new-{index}",
+                title=f"Discovery New {index}",
+                artist=f"Discovery Artist {index}",
+                album=f"Discovery Album {index}",
+                play_count=0,
+            )
+            scores.append(MusicScore(
+                song_id=song.id,
+                title=song.title,
+                artist=song.artist,
+                album=song.album,
+                play_count=0,
+                song=song,
+                total_score=float(40 - index),
+            ))
+
+        final, refilled = RefillEngine.refill(
+            [existing],
+            scores,
+            5,
+            "Discovery Mix",
+            {},
+            filter_config={},
+        )
+
+        self.assertEqual(len(final), 5)
+        self.assertEqual(len(refilled), 4)
+
+    def test_forgotten_mix_does_not_refill_never_played_tracks(self):
+        existing = Song(
+            id="forgotten-existing",
+            title="Forgotten Existing",
+            artist="Existing Artist",
+            album="Existing Album",
+            play_count=3,
+        )
+        unplayed = Song(
+            id="forgotten-unplayed",
+            title="Never Played",
+            artist="New Artist",
+            album="New Album",
+            play_count=0,
+        )
+        scores = [
+            MusicScore(
+                song_id=existing.id,
+                title=existing.title,
+                artist=existing.artist,
+                album=existing.album,
+                play_count=3,
+                song=existing,
+                total_score=90.0,
+            ),
+            MusicScore(
+                song_id=unplayed.id,
+                title=unplayed.title,
+                artist=unplayed.artist,
+                album=unplayed.album,
+                play_count=0,
+                song=unplayed,
+                total_score=40.0,
+            ),
+        ]
+
+        final, refilled = RefillEngine.refill(
+            [existing],
+            scores,
+            2,
+            "Forgotten Favorites",
+            {},
+            filter_config={},
+            history_available=True,
+            history_empty=True,
+        )
+
+        self.assertEqual(final, [existing])
+        self.assertEqual(refilled, [])
+
     def test_navidrome_history_raises_when_all_history_endpoints_fail(self):
         client = NavidromeClient("http://example.test", "user", "pass")
         client._request = Mock(side_effect=RuntimeError("404 Not Found"))
