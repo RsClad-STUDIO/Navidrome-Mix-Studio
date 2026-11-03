@@ -56,10 +56,16 @@ class MixHistoryService:
     @staticmethod
     def _mix_signature(preset: str, songs: List[Dict[str, str]]) -> Optional[tuple]:
         """同じプリセット・同じ楽曲構成を同一Mixとして判定する。"""
+        if not isinstance(songs, list):
+            return None
         song_ids = sorted({
             str(song.get("id"))
             for song in songs
-            if isinstance(song, dict) and song.get("id") is not None
+            if (
+                isinstance(song, dict)
+                and song.get("id") is not None
+                and str(song.get("id")).strip()
+            )
         })
         if not song_ids:
             return None
