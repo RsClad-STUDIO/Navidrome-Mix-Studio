@@ -214,7 +214,7 @@ class RegressionFixTests(unittest.TestCase):
 
         # 21 selected tracks already occupy the normal six-per-album allowance.
         for index in range(27):
-            album_index = index // 6 if index < 21 else index - 21
+            album_index = index // 6 if index < 21 else (index - 21) // 2
             song = Song(
                 id=f"played-{index}",
                 title=f"Played Track {index}",
