@@ -47,6 +47,26 @@ class TranslationResourceTests(unittest.TestCase):
                 self.assertTrue(set(locale) - {"__meta__"})
                 self.assertTrue(set(english) - set(locale))
 
+    def test_translation_placeholders_match_english(self):
+        import re
+
+        english = json.loads(
+            (TRANSLATION_DIR / "en.json").read_text(encoding="utf-8")
+        )
+        placeholder_pattern = re.compile(r"\\{[a-zA-Z_][a-zA-Z0-9_]*\\}")
+        for code in ("es", "fr", "de", "pt_BR"):
+            locale = json.loads(
+                (TRANSLATION_DIR / f"{code}.json").read_text(encoding="utf-8")
+            )
+            for key, value in locale.items():
+                if key == "__meta__":
+                    continue
+                with self.subTest(language=code, key=key):
+                    self.assertEqual(
+                        sorted(placeholder_pattern.findall(value)),
+                        sorted(placeholder_pattern.findall(english[key])),
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()
