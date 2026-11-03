@@ -13,21 +13,6 @@ class VersionFilter:
         self.suppress_acoustic = config.get("suppress_acoustic", False)
 
     def is_suppressed(self, song: Song) -> bool:
-<<<<<<< origin/main
-        """除外設定に基づいて、その曲を弾くべきか判定します。"""
-        v_info = TitleNormalizer.detect_versions(song.title)
-        if self.suppress_instrumental and v_info.get("instrumental"):
-            return True
-        if self.suppress_live and v_info.get("live"):
-            return True
-        if self.suppress_remix and v_info.get("remix"):
-            return True
-        if self.suppress_demo and v_info.get("demo"):
-            return True
-        if self.suppress_acoustic and v_info.get("acoustic"):
-            return True
-        return False
-=======
         """有効化された除外条件に該当する場合だけ True を返す。"""
         searchable_text = f"{song.title or ''} {song.album or ''}"
         versions = TitleNormalizer.detect_versions(searchable_text)
@@ -39,7 +24,6 @@ class VersionFilter:
             or (self.suppress_demo and versions.get("demo", False))
             or (self.suppress_acoustic and versions.get("acoustic", False))
         )
->>>>>>> HEAD
 
     def is_variant(self, song: Song) -> bool:
         """何らかのバージョン違いであるかを返す。"""
