@@ -29,6 +29,7 @@ class TKey(StrEnum):
     MIX_CHECKBOX_DEMO = "mix.checkbox.demo"
     MIX_CHECKBOX_ACOUSTIC = "mix.checkbox.acoustic"
     MIX_PLAYLIST_TITLE_SUFFIX = "mix.playlist.title_suffix"
+    MIX_HISTORY_DUPLICATE_NOTICE = "mix.history.duplicate_notice"
 
     # --- Strategy Names ---
     STRATEGY_DAILY_NAME = "mix.strategy.daily.name"
