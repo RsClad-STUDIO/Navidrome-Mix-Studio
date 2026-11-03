@@ -28,14 +28,23 @@ class RefillEngine:
             return final_list, []
 
         config = filter_config or {}
+        available_album_count = len({
+            score.album or "Unknown Album" for score in scored_list
+        })
+        available_artist_count = len({
+            score.artist or "Unknown Artist" for score in scored_list
+        })
         version_filter = VersionFilter(config)
         album_filter = AlbumFilter(
             level=config.get("album_level", "Normal"),
             filter_versions=config.get("filter_versions", True),
             target_size=limit,
+            available_album_count=available_album_count,
         )
         artist_filter = ArtistFilter(
-            level=config.get("artist_level", "Normal"), target_size=limit
+            level=config.get("artist_level", "Normal"),
+            target_size=limit,
+            available_artist_count=available_artist_count,
         )
         existing_ids = {song.id for song in final_list}
         refilled_list: List[Song] = []
