@@ -14,7 +14,8 @@ class DailyStrategy(BaseStrategy):
         n_past = int(limit * DailyMixConfig.RATIO_PAST)
         
         # 好みの核を特定 (上位10曲から)
-        core_pool = [ms for ms in scored_list if ms.song.starred or days_map.get(ms.song_id, 999) <= DailyMixConfig.RECENT_DAYS_THRESHOLD][:DailyMixConfig.CORE_POOL_SIZE]
+        core_pool_size = max(1, int(context.get("requested_limit", limit // 2) * DailyMixConfig.CORE_POOL_RATIO))
+        core_pool = [ms for ms in scored_list if ms.song.starred or days_map.get(ms.song_id, 999) <= DailyMixConfig.RECENT_DAYS_THRESHOLD][:core_pool_size]
         core_artists = {ms.artist for ms in core_pool}
         core_albums = {ms.album for ms in core_pool}
 
@@ -47,7 +48,9 @@ class DailyStrategy(BaseStrategy):
         # 5. 発見枠 (残りを中堅スコアから)
         needed = limit - len(raw_candidates)
         if needed > 0:
-            disc_pool = [ms for ms in scored_list[50:1000] if ms.song_id not in [s.id for s in raw_candidates]]
+            start = int(len(scored_list) * DailyMixConfig.DISCOVERY_START_RATIO)
+            end = max(start + 1, int(len(scored_list) * DailyMixConfig.DISCOVERY_END_RATIO))
+            disc_pool = [ms for ms in scored_list[start:end] if ms.song_id not in [s.id for s in raw_candidates]]
             for ms in disc_pool[:needed]:
                 ms.song.selection_source = "discovery"
                 raw_candidates.append(ms.song)
