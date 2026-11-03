@@ -30,6 +30,13 @@ class NavidromeClient:
             "f": "json",
         }
 
+    @staticmethod
+    def _as_list(value: Any) -> List[Dict[str, Any]]:
+        """Subsonic JSONの単一オブジェクト／配列の揺れを正規化します。"""
+        if value is None:
+            return []
+        return value if isinstance(value, list) else [value]
+
     def test_connection(self) -> ConnectionResult:
         """Phase 11: 接続テストを実施する。"""
         if not self.server_url:
@@ -123,7 +130,11 @@ class NavidromeClient:
     def get_starred(self) -> Dict[str, Any]:
         """お気に入り（スター付き）データ（曲、アルバム、アーティスト）を取得します。"""
         res = self._request("getStarred")
-        return res.get("starred", {})
+        starred = res.get("starred") or {}
+        return {
+            key: self._as_list(starred.get(key))
+            for key in ("song", "album", "artist")
+        }
 
     def get_starred_songs(self) -> List[Dict[str, Any]]:
         return self.get_starred().get("song", [])
