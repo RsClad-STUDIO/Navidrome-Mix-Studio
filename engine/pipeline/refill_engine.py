@@ -84,7 +84,13 @@ class RefillEngine:
                 # lastPlayed metadata must not block this zero-history fallback.
                 allow_unplayed_fallback = (
                     preset_name == "Favorites Mix"
-                    or (history_available and history_empty)
+                    or (
+                        history_available
+                        and (
+                            history_empty
+                            or preset_name == "Daily Mix"
+                        )
+                    )
                 )
                 eligible = not song.starred and (
                     music_score.play_count >= 1
