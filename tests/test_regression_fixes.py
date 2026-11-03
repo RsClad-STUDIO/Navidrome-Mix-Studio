@@ -5,9 +5,11 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from api.navidrome_client import NavidromeClient
+from engine.candidate_generator import CandidateGenerator
 from engine.filters.artist_filter import ArtistFilter
 from engine.filters.album_filter import AlbumFilter
 from engine.filters.diversity_engine import DiversityEngine
+from engine.pipeline.purge_engine import PurgeEngine
 from engine.pipeline.refill_engine import RefillEngine
 from engine.strategies.daily_strategy import DailyStrategy
 from engine.reporting.report_formatter import ReportFormatter
@@ -41,17 +43,49 @@ class RegressionFixTests(unittest.TestCase):
         self.assertIsNotNone(entry.played_at)
         self.assertEqual(entry.played_at.tzinfo, __import__("datetime").timezone.utc)
 
-    def test_singleton_playlists_and_now_playing_are_normalized(self):
+    def test_now_playing_is_not_treated_as_playback_history(self):
         client = NavidromeClient("http://example.test", "user", "pass")
         def response_for(endpoint, *args, **kwargs):
             if endpoint == "getPlaylists":
                 return {"playlists": {"playlist": {"id": "pl-1", "name": "One"}}}
+            if endpoint in {"getRecentPlayed", "getHistory"}:
+                raise RuntimeError("404 endpoint not found")
             if endpoint == "getNowPlaying":
                 return {"nowPlaying": {"entry": {"id": "song-1", "title": "One"}}}
             return {}
         client._request = Mock(side_effect=response_for)
         self.assertEqual(client.get_playlists(), [{"id": "pl-1", "name": "One"}])
-        self.assertEqual(client.get_history(), [{"id": "song-1", "title": "One"}])
+        with self.assertRaisesRegex(RuntimeError, "No supported playback-history"):
+            client.get_history()
+        self.assertNotIn(
+            "getNowPlaying",
+            [call.args[0] for call in client._request.call_args_list],
+        )
+
+    def test_candidate_generator_preserves_all_favorites_and_deduplicates_ids(self):
+        songs = [
+            Song(id="fav-1", title="Favorite", artist="A"),
+            Song(id="fav-2", title="Favorite 2", artist="B"),
+            Song(id="other-1", title="Other", artist="C"),
+            Song(id="other-1", title="Duplicate", artist="D"),
+        ]
+        favorites = Mock(side_effect=lambda song_id: song_id.startswith("fav-"))
+        generator = CandidateGenerator(favorites_service=SimpleNamespace(
+            is_song_favorite=favorites
+        ))
+        result = generator.generate_candidates(songs, target_limit=1, multiplier=1)
+        self.assertEqual({song.id for song in result}, {"fav-1", "fav-2"})
+        self.assertTrue(all(song.starred for song in result))
+
+    def test_live_filter_remains_opt_in_by_default(self):
+        song = Song(
+            id="live-1",
+            title="Concert Live",
+            artist="Artist",
+            duration=240,
+        )
+        self.assertFalse(PurgeEngine.should_purge(song, {}))
+        self.assertTrue(PurgeEngine.should_purge(song, {"suppress_live": True}))
 
     def test_adaptive_mode_changes_weights_based_on_library_context(self):
         adaptive = ScoringCalculator(
