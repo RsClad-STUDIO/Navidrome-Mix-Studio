@@ -31,7 +31,7 @@ jobs:
           fi
           tree_sha="$(printf '%s\n' "$merge_output" | head -n 1)"
           git read-tree "$tree_sha"
-          git checkout-index -a
+          git checkout-index -a -f
           git checkout HEAD -- .github/workflows/tests.yml
           git add .github/workflows/tests.yml
           tree_sha="$(git write-tree)"
