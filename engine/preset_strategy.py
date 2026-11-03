@@ -116,7 +116,7 @@ class PresetStrategy(ABC):
 
         candidate_selected = ranked_final[:limit]
 
-        # Rotation Budget 適用 (急激な変化を抑えつつ、指定枠数分を入れ替える)
+        # 前回Mixとの重複曲を、上限枠数まで高スコアの未選出曲に置き換える。
         selected = RotationCalculator.apply_rotation_budget(
             candidate_selected=candidate_selected,
             prev_mix_ids=prev_mix_ids,
