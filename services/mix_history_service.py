@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 class MixHistoryService:
-    """Mix生成履歴の管理サービス (Phase 10.0 対応)"""
+    """Mix生成履歴をJSONファイルで管理するサービス。"""
 
     MAX_HISTORY_LIMIT = 100
 
@@ -33,8 +33,10 @@ class MixHistoryService:
         record = {
             "timestamp": timestamp,
             "preset": preset,
-            "songs": songs
+            "songs": songs,
         }
+        if theme is not None:
+            record["theme"] = theme
         history.insert(0, record)
         history = history[:self.MAX_HISTORY_LIMIT]
         
@@ -47,7 +49,7 @@ class MixHistoryService:
             return False
 
     def get_song_occurrence_counts(self, preset: str, lookback: int = 5) -> Dict[str, int]:
-        """Section 6 の Rotation 用に過去の出現回数を集計"""
+        """Rotation計算用に、指定Mixの直近履歴から曲ごとの出現回数を集計する。"""
         history = self.load_history()
         preset_history = [item for item in history if item.get("preset") == preset][:lookback]
 

@@ -7,7 +7,7 @@ class RefillEngine:
 
     @staticmethod
     def refill(current_songs: List[Song], scored_list: List[MusicScore], 
-               limit: int, preset_name: str, days_map: dict) -> List[Song]:
+               limit: int, preset_name: str, days_map: dict) -> tuple[List[Song], List[Song]]:
         """不足分を補充し、補充された曲のリストを別途返します。"""
         if len(current_songs) >= limit:
             return current_songs, []

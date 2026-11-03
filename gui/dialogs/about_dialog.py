@@ -44,8 +44,8 @@ class AboutDialog(QDialog):
         
         infos = [
             (tr(TKey.ABOUT_LABEL_VERSION), AppInfo.APP_VERSION),
-            ("Python:", AppInfo.PYTHON_VERSION),
-            ("PySide6:", AppInfo.QT_VERSION),
+            (tr(TKey.ABOUT_LABEL_PYTHON), AppInfo.PYTHON_VERSION),
+            (tr(TKey.ABOUT_LABEL_PYSIDE), AppInfo.QT_VERSION),
             (tr(TKey.ABOUT_LABEL_AUTHOR), AppInfo.APP_AUTHOR),
             (tr(TKey.ABOUT_LABEL_LICENSE), AppInfo.APP_LICENSE_NAME),
         ]

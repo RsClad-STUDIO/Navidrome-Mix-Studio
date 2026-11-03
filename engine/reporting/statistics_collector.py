@@ -1,5 +1,4 @@
 import math
-import logging
 from collections import Counter
 from typing import List, Dict, Any
 from models.song import Song
@@ -37,7 +36,7 @@ class StatisticsCollector:
         final_scores = sorted([ms.total_score for ms in scored_list if ms.song in final_songs], reverse=True)
 
         # 2. 利用率 (Utilization) の計算
-        # 重要: 分子に strat_counts (補充前) を使うことで 100% 超えを防止
+        # 補充曲を含めず、戦略による初期選出分だけを利用率の分子にする。
         def make_util(label, cand_count, used_count):
             # 候補数を超えて採用することは理論上ないため、安全のために min をとる
             actual_used = min(used_count, cand_count)

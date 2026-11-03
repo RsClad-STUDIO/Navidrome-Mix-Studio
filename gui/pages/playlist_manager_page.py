@@ -1,4 +1,4 @@
-"""Phase 13.3: Playlist Manager - Optimized for Name visibility and simplified Info."""
+"""プレイリストの一覧表示・詳細確認・管理を行う画面。"""
 
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, List, Optional
@@ -210,7 +210,7 @@ class PlaylistManagerPage(QWidget):
                 if datetime.fromisoformat(raw_date.replace("Z", "+00:00")).timestamp() < cutoff.timestamp(): targets.append(p)
             except: continue
         if not targets:
-            QMessageBox.information(self, tr(TKey.PLAYLIST_MGR_GROUP_CLEANUP), "No old generated playlists found."); return
+            QMessageBox.information(self, tr(TKey.PLAYLIST_MGR_GROUP_CLEANUP), tr(TKey.PLAYLIST_MGR_NO_OLD_GENERATED)); return
         if QMessageBox.question(self, tr(TKey.DIALOG_CLEANUP_TITLE), tr(TKey.DIALOG_CLEANUP_MSG, count=len(targets), days=self.spin_cleanup_days.value()), QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
             self.setCursor(Qt.CursorShape.WaitCursor)
             for p in targets: self._context.playlist_service.delete_playlist(p.id)

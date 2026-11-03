@@ -1,4 +1,4 @@
-"""Phase 13.4: SettingsPage - Final Polished version."""
+"""接続情報やアプリケーション動作設定を管理する画面。"""
 
 from typing import TYPE_CHECKING, List, Optional
 from PySide6.QtWidgets import (
@@ -44,7 +44,7 @@ class SettingsPage(QWidget):
         # Aboutボタン
         self.btn_about = QPushButton("?")
         self.btn_about.setFixedSize(30, 30)
-        self.btn_about.setToolTip("About this application")
+        self.btn_about.setToolTip(tr(TKey.SETTINGS_ABOUT_TOOLTIP))
         self.btn_about.clicked.connect(self._on_about_clicked)
         btn_layout.addWidget(self.btn_about)
 
@@ -212,7 +212,7 @@ class SettingsPage(QWidget):
             self.lbl_test_status.setText(tr(TKey.SETTINGS_STATUS_NOT_TESTED)); self.lbl_test_status.setStyleSheet("color: gray;"); self._last_test_result = None
 
     def _on_add_profile(self) -> None:
-        name = f"New Profile {len(self._profiles)+1}"
+        name = tr(TKey.SETTINGS_PROFILE_NEW_FORMAT, number=len(self._profiles) + 1)
         self._profiles.append(ServerProfile(name=name, url="", username="", password=""))
         self._refresh_profile_combos(name)
 

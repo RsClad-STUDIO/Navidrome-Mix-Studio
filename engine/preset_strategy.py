@@ -1,9 +1,8 @@
 """選曲戦略（Strategy Pattern）および実行ログを出力するモジュール。"""
 
 from abc import ABC, abstractmethod
-import logging
 import random
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 from engine.weights import RecommendationWeights
 from models.song import Song
 from engine.pipeline.rotation_calculator import RotationCalculator
@@ -28,7 +27,7 @@ class PresetStrategy(ABC):
     @abstractmethod
     def execute_selection(
         self, candidates: List[Song], limit: int, context: Dict
-    ) -> Tuple[List[Song], Dict[str, int]]:
+    ) -> Tuple[List[Song], Dict[str, Any]]:
         pass
 
     def _run_common_selection_flow(
@@ -40,9 +39,8 @@ class PresetStrategy(ABC):
         max_budget: int
     ) -> Tuple[List[Song], Dict]:
         """
-        全戦略で共通して使用する選出・Rotation・レポート生成の標準フロー。
+        戦略間で共有する選出・Rotation・メトリクス生成の処理。
         """
-        logger = logging.getLogger(self.__class__.__name__)
         
         if not pool:
             return [], {"error": "Empty pool"}
@@ -70,7 +68,7 @@ class PresetStrategy(ABC):
         for s in pool:
             starred_val = 100.0 if getattr(s, "starred", False) else 0.0
             recency_val = 100.0 if s.id in recent_set else 0.0
-            # 人気度の影響を少しマイルドにする (対数的なスケーリングに近い効果)
+            # 再生回数を最大値に対する比率でスケーリングする。
             play_val = min(100.0, (s.play_count / max_play) * 100.0)
             discovery_val = 100.0 if s.play_count == 0 else 0.0
             
@@ -86,12 +84,12 @@ class PresetStrategy(ABC):
                 (random_val * weights.weight_random)
             )
 
-            # Rotation計算 (Phase 10: 追い出しロジック)
+            # Rotationペナルティを計算する。
             accum_weight = 0.0
             if has_history and s.id in decay_map:
-                accum_weight = decay_map[s.id]["accumulated_weight"]
-            is_top_favorite = (s.play_count >= max_play * 0.7) or (s.id in recent_set)
-            penalty_rate = RotationCalculator.calculate_penalty_rate(accum_weight, is_top_favorite)
+                accum_weight = decay_map.get(s.id, {}).get("accumulated_weight", 0.0)
+            is_priority_track = (s.play_count >= max_play * 0.7) or (s.id in recent_set)
+            penalty_rate = RotationCalculator.calculate_penalty_rate(accum_weight, is_priority_track)
             rotation_score = max(0.0, 100.0 * (1.0 - penalty_rate))
 
             # 最終スコアリング
@@ -118,7 +116,7 @@ class PresetStrategy(ABC):
 
         candidate_selected = ranked_final[:limit]
 
-        # Rotation Budget 適用 (急激な変化を抑えつつ、指定枠数分を入れ替える)
+        # 前回Mixとの重複曲を、上限枠数まで高スコアの未選出曲に置き換える。
         selected = RotationCalculator.apply_rotation_budget(
             candidate_selected=candidate_selected,
             prev_mix_ids=prev_mix_ids,
@@ -134,8 +132,7 @@ class PresetStrategy(ABC):
         final_list = list(selected)
         random.shuffle(final_list)
 
-        # メトリクス生成 (略)
-        selected_ids = {s.id for s in final_list}
+        # 選出結果のRotationメトリクスを生成する。
         in_songs = [f"{s.title} - {s.artist}" for s in final_list if s.id not in prev_mix_ids]
         metrics = {
             "rotation_in_count": len(in_songs),
@@ -146,13 +143,11 @@ class PresetStrategy(ABC):
         return final_list, metrics
 
 
-# ... (冒頭のインポートは維持)
-
 class FavoritesStrategy(PresetStrategy):
     """お気に入りを中心とし、少量の推薦曲を加えたMix戦略。"""
 
     name = "Favorites Mix"
-    description = "お気に入りを最優先（22-23曲）。残りの枠にフィルター条件を満たす推薦曲を2-3曲加えます。"
+    description = "お気に入りを優先し、最大3曲の推薦曲で不足枠を補います。"
     
     MAX_ROTATION_BUDGET = 3
     NON_FAVORITE_LIMIT = 3
@@ -162,41 +157,35 @@ class FavoritesStrategy(PresetStrategy):
             weight_favorite=0.8, weight_recency=0.1, weight_popularity=0.1, weight_discovery=0.0, weight_random=0.1
         )
 
-# FavoritesStrategy の execute_selection 部分を以下のように修正
-    def execute_selection(self, candidates, limit, context) -> Tuple[List[Song], Dict]:
-        # 全お気に入り曲の抽出
-        starred_songs = [s for s in candidates if s.starred]
-        
-        # スコア順に並べて上位 limit 件（22~25曲）を選ぶ
-        # (RecommendationEngine側でもスコア順に並ぶが、ここで選出対象を確定させる)
-        starred_songs.sort(key=lambda s: s.play_count, reverse=True) # 暫定
-        
-        selected = starred_songs[:limit]
-        return selected, {"reasons": ["Top Favorites Pool"]}
+    def execute_selection(
+        self, candidates: List[Song], limit: int, context: Dict
+    ) -> Tuple[List[Song], Dict]:
+        """お気に入りを優先し、不足枠を非お気に入り曲で補完する。"""
+        if limit <= 0:
+            return [], {"favorite_count": 0, "non_favorite_count": 0}
 
-        # 推薦曲の選出
-        remaining_limit = limit - len(fav_selected)
-        non_fav_request_limit = min(remaining_limit, self.NON_FAVORITE_LIMIT)
+        starred_songs = [song for song in candidates if song.starred]
+        starred_songs.sort(key=lambda song: song.play_count, reverse=True)
+        fav_selected = starred_songs[:limit]
 
-        # contextからフィルター情報を引き継いで推薦を依頼
-        non_fav_selected = NonFavoriteRecommender.get_recommendations(
-            all_candidates=context.get("all_songs", []),
-            selected_favorites=fav_selected,
-            limit=non_fav_request_limit,
-            context=context
-        )
+        remaining_limit = min(limit - len(fav_selected), self.NON_FAVORITE_LIMIT)
+        non_fav_selected: List[Song] = []
+        if remaining_limit > 0:
+            non_fav_selected, _ = NonFavoriteRecommender.get_recommendations(
+                all_candidates=context.get("all_songs", candidates),
+                selected_favorites=fav_selected,
+                limit=remaining_limit,
+                context=context,
+            )
 
-        final_list = fav_selected + non_fav_selected
-        random.shuffle(final_list)
-
-        metrics = fav_metrics
-        metrics.update({
+        selected = fav_selected + non_fav_selected
+        random.shuffle(selected)
+        metrics = {
             "favorite_count": len(fav_selected),
-            "non_favorite_count": len(non_fav_selected)
-        })
-        return final_list, metrics
-
-# ... (DailyStrategy, DiscoveryStrategy などの実装も、_run_common_selection_flow を使う形に統一)
+            "non_favorite_count": len(non_fav_selected),
+            "total_selected": len(selected),
+        }
+        return selected, metrics
 
 
 class DailyStrategy(PresetStrategy):
@@ -213,7 +202,7 @@ class DailyStrategy(PresetStrategy):
             weight_recency=w.weight_recency,
             weight_popularity=w.weight_popularity,
             weight_discovery=w.weight_discovery,
-            weight_random=max(w.weight_random, 0.2) # 最低20%はランダム
+            weight_random=max(w.weight_random, 0.2) # ランダム要素の重みを最低0.2に設定
         )
 
     def execute_selection(self, candidates: List[Song], limit: int, context: Dict) -> Tuple[List[Song], Dict]:

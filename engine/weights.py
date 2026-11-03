@@ -3,7 +3,6 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Dict
 from models.library_profile import LibraryProfile
-from dataclasses import dataclass
 
 @dataclass
 class RecommendationWeights:
@@ -15,7 +14,7 @@ class RecommendationWeights:
     weight_discovery: float = 0.20
     weight_random: float = 0.15
 
-    # Rotation 用ペナルティ率（追加）
+    # Rotation 用ペナルティ率
     rotation_penalty_recent: float = -0.15  # 直近1回 (-15%)
     rotation_penalty_old: float = -0.08    # 2〜3回前 (-8%)
 

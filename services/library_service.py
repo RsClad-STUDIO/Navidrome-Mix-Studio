@@ -53,19 +53,14 @@ class LibraryService:
             self._logger.error(f"Failed to fetch albums: {e}")
             return []
 
-    def fetch_songs(self, query: str = "", size: int = 500) -> List[Song]:
-        """楽曲一覧を取得し、モデルのリストとして返します。
-
-        Args:
-            query (str): 検索文字
-            size (int): 取得件数
-
-        Returns:
-            List[Song]: 楽曲のリスト
-        """
+    def fetch_songs(
+        self, query: str = "", size: Optional[int] = None
+    ) -> List[Song]:
+        """楽曲一覧を取得する。size未指定時はページングして全曲を取得する。"""
         try:
             raw_songs = self._client.get_songs(query=query, size=size)
-            return [Song.from_dict(s) for s in raw_songs]
+            return [Song.from_dict(song) for song in raw_songs]
         except Exception as e:
-            self._logger.error(f"Failed to fetch songs: {e}")
-            return []
+            self._logger.error("Failed to fetch complete song list: %s", e)
+            # 取得失敗時に部分ライブラリでMixを作らないよう例外を伝播する。
+            raise
