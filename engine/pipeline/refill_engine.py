@@ -29,8 +29,11 @@ class RefillEngine:
         album_filter = AlbumFilter(
             level=config.get("album_level", "Normal"),
             filter_versions=config.get("filter_versions", True),
+            target_size=limit,
         )
-        artist_filter = ArtistFilter(level=config.get("artist_level", "Normal"))
+        artist_filter = ArtistFilter(
+            level=config.get("artist_level", "Normal"), target_size=limit
+        )
         existing_ids = {song.id for song in final_list}
         refilled_list: List[Song] = []
 
