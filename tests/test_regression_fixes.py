@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 from api.navidrome_client import NavidromeClient
 from engine.filters.artist_filter import ArtistFilter
+from engine.filters.album_filter import AlbumFilter
 from engine.filters.diversity_engine import DiversityEngine
 from engine.pipeline.refill_engine import RefillEngine
 from engine.strategies.daily_strategy import DailyStrategy
@@ -101,6 +102,19 @@ class RegressionFixTests(unittest.TestCase):
         })
         self.assertEqual(client.get_history(), [{"id": "history-1"}])
 
+    def test_diversity_caps_scale_with_requested_mix_size(self):
+        self.assertEqual(AlbumFilter(target_size=25).max_per_album, 6)
+        self.assertEqual(AlbumFilter(target_size=50).max_per_album, 12)
+        self.assertEqual(AlbumFilter(level="Low", target_size=50).max_per_album, 16)
+        self.assertEqual(AlbumFilter(level="High", target_size=50).max_per_album, 6)
+
+        songs = [
+            Song(id=str(i), title=f"Song {i}", artist="Same Artist")
+            for i in range(60)
+        ]
+        self.assertEqual(len(ArtistFilter(target_size=25).apply(songs)), 12)
+        self.assertEqual(len(ArtistFilter(target_size=50).apply(songs)), 25)
+
     def test_artist_filter_does_not_drop_adjacent_same_artist_candidates(self):
         songs = [
             Song(id=str(i), title=f"Song {i}", artist="Same Artist")
@@ -147,6 +161,12 @@ class RegressionFixTests(unittest.TestCase):
         self.assertEqual(len(final), requested)
         self.assertEqual(len(refilled), requested - len(initial))
         self.assertTrue(all(song.play_count == 0 for song in final))
+
+    def test_navidrome_history_raises_when_all_history_endpoints_fail(self):
+        client = NavidromeClient("http://example.test", "user", "pass")
+        client._request = Mock(side_effect=RuntimeError("404 Not Found"))
+        with self.assertRaises(RuntimeError):
+            client.get_history()
 
     def test_history_service_distinguishes_empty_history_from_fetch_failure(self):
         successful = HistoryService(SimpleNamespace(get_history=Mock(return_value=[])))
