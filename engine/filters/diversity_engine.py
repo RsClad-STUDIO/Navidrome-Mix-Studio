@@ -53,8 +53,8 @@ class DiversityEngine:
 
     def get_summary_log(self) -> str:
         return (
-            f"Version Filter Removed   : {len(self._removed_ids['version'])}\\n"
-            f"Album Filter Removed     : {len(self._removed_ids['album'])}\\n"
+            f"Version Filter Removed   : {len(self._removed_ids['version'])}\n"
+            f"Album Filter Removed     : {len(self._removed_ids['album'])}\n"
             f"Artist Filter Removed    : {len(self._removed_ids['artist'])}"
         )
 
