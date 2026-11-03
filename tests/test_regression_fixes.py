@@ -162,6 +162,13 @@ class RegressionFixTests(unittest.TestCase):
         self.assertEqual(len(refilled), requested - len(initial))
         self.assertTrue(all(song.play_count == 0 for song in final))
 
+        # An empty map caused by an unavailable history API must not bootstrap.
+        failed_history_result, failed_history_refills = RefillEngine.refill(
+            initial, scores, requested, "Daily Mix", {}, filter_config={}, history_available=False
+        )
+        self.assertEqual(len(failed_history_result), len(initial))
+        self.assertEqual(failed_history_refills, [])
+
     def test_navidrome_history_raises_when_all_history_endpoints_fail(self):
         client = NavidromeClient("http://example.test", "user", "pass")
         client._request = Mock(side_effect=RuntimeError("404 Not Found"))
