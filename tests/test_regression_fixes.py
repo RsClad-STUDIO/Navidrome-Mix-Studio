@@ -208,6 +208,68 @@ class RegressionFixTests(unittest.TestCase):
         self.assertEqual(len(failed_history_result), len(initial))
         self.assertEqual(failed_history_refills, [])
 
+    def test_favorites_mix_refills_with_unplayed_tracks_after_played_pool_is_exhausted(self):
+        current_songs = []
+        scores = []
+
+        # 21 selected tracks already occupy the normal six-per-album allowance.
+        for index in range(27):
+            album_index = index // 6 if index < 21 else index - 21
+            song = Song(
+                id=f"played-{index}",
+                title=f"Played Track {index}",
+                artist=f"Played Artist {index}",
+                album=f"Album {album_index}",
+                play_count=1,
+            )
+            if index < 21:
+                current_songs.append(song)
+            scores.append(MusicScore(
+                song_id=song.id,
+                title=song.title,
+                artist=song.artist,
+                album=song.album,
+                play_count=1,
+                song=song,
+                total_score=float(100 - index),
+            ))
+
+        # These never-played tracks have distinct artists/albums and can safely
+        # fill the remaining slots after played candidates hit diversity caps.
+        for index in range(4):
+            song = Song(
+                id=f"unplayed-{index}",
+                title=f"Unplayed Track {index}",
+                artist=f"Unplayed Artist {index}",
+                album=f"Unplayed Album {index}",
+                play_count=0,
+            )
+            scores.append(MusicScore(
+                song_id=song.id,
+                title=song.title,
+                artist=song.artist,
+                album=song.album,
+                play_count=0,
+                song=song,
+                total_score=float(10 - index),
+            ))
+
+        final, refilled = RefillEngine.refill(
+            current_songs,
+            scores,
+            25,
+            "Favorites Mix",
+            {},
+            filter_config={},
+            history_available=True,
+            history_empty=False,
+        )
+
+        self.assertEqual(len(final), 25)
+        self.assertEqual(len(refilled), 4)
+        self.assertTrue(all(song.play_count == 0 for song in refilled))
+        self.assertEqual(len({song.id for song in final}), 25)
+
     def test_navidrome_history_raises_when_all_history_endpoints_fail(self):
         client = NavidromeClient("http://example.test", "user", "pass")
         client._request = Mock(side_effect=RuntimeError("404 Not Found"))
