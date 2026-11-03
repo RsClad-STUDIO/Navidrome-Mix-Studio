@@ -19,6 +19,7 @@ class RefillEngine:
         preset_name: str,
         days_map: dict,
         filter_config: Dict = None,
+        history_available: bool = False,
     ) -> Tuple[List[Song], List[Song]]:
         final_list = list(current_songs[:limit])
         if len(final_list) >= limit:
@@ -61,7 +62,7 @@ class RefillEngine:
                 # bootstrap a Daily Mix from never-played tracks. Once history
                 # exists, retain the normal non-favorite/play-count rule.
                 eligible = not song.starred and (
-                    music_score.play_count >= 1 or not days_map
+                    music_score.play_count >= 1 or (history_available and not days_map)
                 )
                 source_tag = "discovery"
 
