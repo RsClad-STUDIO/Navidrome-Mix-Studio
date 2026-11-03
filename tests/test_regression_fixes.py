@@ -15,6 +15,7 @@ from models.history import HistoryEntry
 from models.song import Song
 from models.music_score import MusicScore
 from services.favorites_service import FavoritesService
+from services.history_service import HistoryService
 from services.library_analyzer import LibraryAnalyzer
 from services.mix_history_service import MixHistoryService
 from services.playlist_service import PlaylistService
@@ -139,13 +140,24 @@ class RegressionFixTests(unittest.TestCase):
         filtered = DiversityEngine(filter_versions=True).apply(raw_candidates)
         initial = filtered[:requested]
         final, refilled = RefillEngine.refill(
-            initial, scores, requested, "Daily Mix", {}, filter_config={}
+            initial, scores, requested, "Daily Mix", {}, filter_config={}, history_available=True
         )
 
         self.assertEqual(len(initial), 6)
         self.assertEqual(len(final), requested)
         self.assertEqual(len(refilled), requested - len(initial))
         self.assertTrue(all(song.play_count == 0 for song in final))
+
+    def test_history_service_distinguishes_empty_history_from_fetch_failure(self):
+        successful = HistoryService(SimpleNamespace(get_history=Mock(return_value=[])))
+        self.assertEqual(successful.fetch_history(), [])
+        self.assertTrue(successful.last_fetch_succeeded)
+
+        failed = HistoryService(SimpleNamespace(
+            get_history=Mock(side_effect=RuntimeError("API unavailable"))
+        ))
+        self.assertEqual(failed.fetch_history(), [])
+        self.assertFalse(failed.last_fetch_succeeded)
 
     def test_empty_playlist_report_does_not_divide_by_zero(self):
         data = SimpleNamespace(
