@@ -34,7 +34,7 @@ class HistoryService:
             if sid and p_at:
                 try:
                     dt = self._make_naive(p_at if isinstance(p_at, datetime) else datetime.fromisoformat(str(p_at).replace('Z', '+00:00')))
-                    diff = (now - dt).days
+                    diff = max(0, (now - dt).days)
                     if sid not in days_map or diff < days_map[sid]:
                         days_map[sid] = diff
                 except Exception: continue
@@ -45,7 +45,7 @@ class HistoryService:
             if l_played:
                 try:
                     dt = self._make_naive(l_played if isinstance(l_played, datetime) else datetime.fromisoformat(str(l_played).replace('Z', '+00:00')))
-                    diff = (now - dt).days
+                    diff = max(0, (now - dt).days)
                     if s.id not in days_map or diff < days_map[s.id]:
                         days_map[s.id] = diff
                 except Exception: continue
