@@ -203,5 +203,6 @@
   "about.label.pyside": "PySide6:",
   "error.license_load": "ファイルの読み込みに失敗しました: {error}",
   "settings.profile.name_empty": "プロファイル名を入力してください。",
-  "settings.profile.name_duplicate": "同じ名前のプロファイルが既に存在します。"
+  "settings.profile.name_duplicate": "同じ名前のプロファイルが既に存在します。",
+  "dialog.error.save_failed": "プレイリストを保存できませんでした: {error}"
 }

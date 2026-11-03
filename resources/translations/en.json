@@ -203,5 +203,6 @@
   "about.label.pyside": "PySide6:",
   "error.license_load": "Error loading file: {error}",
   "settings.profile.name_empty": "Profile name cannot be empty.",
-  "settings.profile.name_duplicate": "A profile with this name already exists."
+  "settings.profile.name_duplicate": "A profile with this name already exists.",
+  "dialog.error.save_failed": "The playlist could not be saved: {error}"
 }

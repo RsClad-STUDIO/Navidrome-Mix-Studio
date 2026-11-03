@@ -227,6 +227,7 @@ class TKey(StrEnum):
     DIALOG_RESTART_REQUIRED_MSG = "dialog.restart_required.msg"
     DIALOG_ERROR_TITLE = "dialog.error.title"
     DIALOG_ERROR_GEN_FAILED = "dialog.error.gen_failed"
+    DIALOG_ERROR_SAVE_FAILED = "dialog.error.save_failed"
     DIALOG_SUCCESS_TITLE = "dialog.success.title"
     DIALOG_SUCCESS_SAVE = "dialog.success.save"
     DIALOG_DELETE_PLAYLIST_TITLE = "playlist_manager.dialog.delete.title"

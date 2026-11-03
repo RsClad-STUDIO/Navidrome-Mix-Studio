@@ -31,6 +31,7 @@ class MixPage(QWidget):
         super().__init__()
         self._context: "AppContext" = context
         self._current_songs: List[Song] = []
+        self._save_in_progress = False
         
         self._init_ui()
         TranslationManager.instance().language_changed.connect(self.retranslate_ui)
@@ -169,6 +170,8 @@ class MixPage(QWidget):
 
     def _on_generate(self) -> None:
         if not self._context.mix_service: return
+        self._current_songs = []
+        self.btn_save.setEnabled(False)
         preset_name = self.preset_combo.currentData()
         limit = self.limit_spin.value()
         adaptive = self.chk_adaptive.isChecked()
@@ -205,47 +208,75 @@ class MixPage(QWidget):
             self.unsetCursor()
 
     def _on_save(self) -> None:
-        """国際化されたプレイリスト名でNavidromeに保存。"""
-        if not self._current_songs or not self._context.playlist_service:
+        """Save the current mix once; allow retry only when saving fails."""
+        if (
+            self._save_in_progress
+            or not self.btn_save.isEnabled()
+            or not self._current_songs
+            or not self._context.playlist_service
+        ):
             return
 
-        # 1. 現在の戦略IDを取得
-        internal_id = self.preset_combo.currentData()
+        # Disable immediately so queued/repeated clicks cannot create duplicates.
+        self._save_in_progress = True
+        self.btn_save.setEnabled(False)
+        self.setCursor(Qt.CursorShape.WaitCursor)
+        try:
+            internal_id = self.preset_combo.currentData()
+            playlist_name_keys = {
+                "Daily Mix": TKey.PLAYLIST_NAME_DAILY,
+                "Favorites Mix": TKey.PLAYLIST_NAME_FAVORITES,
+                "Discovery Mix": TKey.PLAYLIST_NAME_DISCOVERY,
+                "Forgotten Favorites": TKey.PLAYLIST_NAME_FORGOTTEN,
+            }
+            name_key = playlist_name_keys.get(
+                internal_id, TKey.STRATEGY_DAILY_NAME
+            )
+            localized_name = tr(name_key)
 
-        # 2. プレイリスト名用の翻訳キーマッピング
-        playlist_name_keys = {
-            "Daily Mix": TKey.PLAYLIST_NAME_DAILY,
-            "Favorites Mix": TKey.PLAYLIST_NAME_FAVORITES,
-            "Discovery Mix": TKey.PLAYLIST_NAME_DISCOVERY,
-            "Forgotten Favorites": TKey.PLAYLIST_NAME_FORGOTTEN
-        }
-        
-        # 3. 翻訳された名称を取得 (なければ一般名称を使用)
-        name_key = playlist_name_keys.get(internal_id, TKey.STRATEGY_DAILY_NAME)
-        localized_name = tr(name_key)
-        
-        # Auto-update uses a stable name; otherwise each generated Mix is kept separately.
-        auto_update = self._context.settings.get("mix.auto_update", False)
-        if auto_update:
-            playlist_title = f"[Mix] {localized_name}"
-        else:
-            now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-            playlist_title = tr(
-                TKey.PLAYLIST_NAME_FORMAT,
-                name=localized_name,
-                datetime=now_str,
+            # Auto-update uses a stable name; otherwise each generated Mix is kept separately.
+            auto_update = self._context.settings.get("mix.auto_update", False)
+            if auto_update:
+                playlist_title = f"[Mix] {localized_name}"
+            else:
+                now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+                playlist_title = tr(
+                    TKey.PLAYLIST_NAME_FORMAT,
+                    name=localized_name,
+                    datetime=now_str,
+                )
+
+            playlist = self._context.playlist_service.create_mix_playlist(
+                mix_name=playlist_title,
+                songs=self._current_songs,
+                auto_overwrite=auto_update,
             )
 
-        # Save the generated playlist.
-        playlist = self._context.playlist_service.create_mix_playlist(
-            mix_name=playlist_title,
-            songs=self._current_songs,
-            auto_overwrite=auto_update,
-        )
-
-        if playlist:
-            QMessageBox.information(
-                self, 
-                tr(TKey.DIALOG_SUCCESS_TITLE), 
-                tr(TKey.DIALOG_SUCCESS_SAVE, name=playlist.name)
+            if playlist:
+                # Keep disabled until the user generates a new mix.
+                QMessageBox.information(
+                    self,
+                    tr(TKey.DIALOG_SUCCESS_TITLE),
+                    tr(TKey.DIALOG_SUCCESS_SAVE, name=playlist.name),
+                )
+            else:
+                # The service did not confirm success, so allow a retry.
+                self.btn_save.setEnabled(True)
+                QMessageBox.warning(
+                    self,
+                    tr(TKey.DIALOG_ERROR_TITLE),
+                    tr(
+                        TKey.DIALOG_ERROR_SAVE_FAILED,
+                        error="The server did not confirm the save.",
+                    ),
+                )
+        except Exception as e:
+            self.btn_save.setEnabled(True)
+            QMessageBox.critical(
+                self,
+                tr(TKey.DIALOG_ERROR_TITLE),
+                tr(TKey.DIALOG_ERROR_SAVE_FAILED, error=str(e)),
             )
+        finally:
+            self._save_in_progress = False
+            self.unsetCursor()
