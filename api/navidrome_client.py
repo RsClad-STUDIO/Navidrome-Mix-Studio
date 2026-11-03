@@ -269,7 +269,6 @@ class NavidromeClient:
         attempts = (
             ("getRecentPlayed", {"count": str(limit)}, "recentPlayed", "entry"),
             ("getHistory", {"size": str(limit)}, "history", "item"),
-            ("getNowPlaying", {}, "nowPlaying", "entry"),
         )
         errors = []
         successful_responses = 0
