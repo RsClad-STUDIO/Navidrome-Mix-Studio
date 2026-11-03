@@ -6,10 +6,14 @@ from unittest.mock import Mock
 
 from api.navidrome_client import NavidromeClient
 from engine.filters.artist_filter import ArtistFilter
+from engine.filters.diversity_engine import DiversityEngine
+from engine.pipeline.refill_engine import RefillEngine
+from engine.strategies.daily_strategy import DailyStrategy
 from engine.reporting.report_formatter import ReportFormatter
 from engine.scoring.calculator import ScoringCalculator
 from models.history import HistoryEntry
 from models.song import Song
+from models.music_score import MusicScore
 from services.favorites_service import FavoritesService
 from services.library_analyzer import LibraryAnalyzer
 from services.mix_history_service import MixHistoryService
@@ -103,6 +107,45 @@ class RegressionFixTests(unittest.TestCase):
         ]
         filtered = ArtistFilter().apply(songs)
         self.assertEqual([song.id for song in filtered], ["0", "1", "2", "3"])
+
+    def test_daily_mix_refills_zero_play_count_library_to_requested_limit(self):
+        songs = []
+        scores = []
+        for index in range(10001):
+            album = "Dominant Album" if index < 100 else f"Album {index}"
+            song = Song(
+                id=f"song-{index}",
+                title=f"Track {index}",
+                artist=f"Artist {index}",
+                album=album,
+                play_count=0,
+            )
+            songs.append(song)
+            scores.append(MusicScore(
+                song_id=song.id,
+                title=song.title,
+                artist=song.artist,
+                album=song.album,
+                play_count=0,
+                song=song,
+                total_score=float(10001 - index),
+            ))
+
+        requested = 25
+        strategy = DailyStrategy()
+        raw_candidates = strategy.generate(
+            scores, {}, requested * 2, songs, {"adaptive_mode": True}
+        )
+        filtered = DiversityEngine(filter_versions=True).apply(raw_candidates)
+        initial = filtered[:requested]
+        final, refilled = RefillEngine.refill(
+            initial, scores, requested, "Daily Mix", {}, filter_config={}
+        )
+
+        self.assertEqual(len(initial), 6)
+        self.assertEqual(len(final), requested)
+        self.assertEqual(len(refilled), requested - len(initial))
+        self.assertTrue(all(song.play_count == 0 for song in final))
 
     def test_empty_playlist_report_does_not_divide_by_zero(self):
         data = SimpleNamespace(
