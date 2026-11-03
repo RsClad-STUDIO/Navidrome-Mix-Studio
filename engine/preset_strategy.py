@@ -68,7 +68,7 @@ class PresetStrategy(ABC):
         for s in pool:
             starred_val = 100.0 if getattr(s, "starred", False) else 0.0
             recency_val = 100.0 if s.id in recent_set else 0.0
-            # 人気度の影響を少しマイルドにする (対数的なスケーリングに近い効果)
+            # 再生回数を最大値に対する比率でスケーリングする。
             play_val = min(100.0, (s.play_count / max_play) * 100.0)
             discovery_val = 100.0 if s.play_count == 0 else 0.0
             
@@ -147,7 +147,7 @@ class FavoritesStrategy(PresetStrategy):
     """お気に入りを中心とし、少量の推薦曲を加えたMix戦略。"""
 
     name = "Favorites Mix"
-    description = "お気に入りを最優先（22-23曲）。残りの枠にフィルター条件を満たす推薦曲を2-3曲加えます。"
+    description = "お気に入りを優先し、最大3曲の推薦曲で不足枠を補います。"
     
     MAX_ROTATION_BUDGET = 3
     NON_FAVORITE_LIMIT = 3
@@ -202,7 +202,7 @@ class DailyStrategy(PresetStrategy):
             weight_recency=w.weight_recency,
             weight_popularity=w.weight_popularity,
             weight_discovery=w.weight_discovery,
-            weight_random=max(w.weight_random, 0.2) # 最低20%はランダム
+            weight_random=max(w.weight_random, 0.2) # ランダム要素の重みを最低0.2に設定
         )
 
     def execute_selection(self, candidates: List[Song], limit: int, context: Dict) -> Tuple[List[Song], Dict]:
