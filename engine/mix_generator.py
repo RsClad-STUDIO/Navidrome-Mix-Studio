@@ -108,6 +108,7 @@ class MixGenerator:
         context = {
             "days_since_last_play": days_map,
             "history_loaded": len(history),
+            "history_available": bool(getattr(self._history_service, "last_fetch_succeeded", False)),
             "requested_limit": limit,
             "favorite_ratio": favorite_ratio,
             "history_coverage": history_coverage,
@@ -132,6 +133,7 @@ class MixGenerator:
             preset_name,
             days_map,
             filter_config=filter_config,
+            history_available=context["history_available"],
         )
 
         random.shuffle(final_songs)
