@@ -16,7 +16,7 @@ class PurgeEngine:
         v_info = TitleNormalizer.detect_versions(combined_text)
 
         # 3. ライブ・長尺除外
-        if config.get("suppress_live", True):
+        if config.get("suppress_live", False):
             if v_info["live"] or song.duration > GlobalConfig.LIVE_PURGE_DURATION:
                 return True
 
