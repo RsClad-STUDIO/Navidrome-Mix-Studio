@@ -88,6 +88,12 @@ class PlaylistService:
                     )
                     if result:
                         return pl
+                    self._logger.error(
+                        "Failed to overwrite existing Mix playlist '%s'; "
+                        "a duplicate will not be created.",
+                        target_name,
+                    )
+                    return None
 
         # 2. 同名が見つからない、または新規作成モードの場合は新しく作る
         return self.create_playlist(target_name, song_ids)
