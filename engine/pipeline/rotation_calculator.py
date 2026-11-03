@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 
 from models.music_score import MusicScore
 
@@ -20,6 +20,54 @@ class RotationCalculator:
         if history_count == 3:
             return 0.015
         return 0.020
+
+    @staticmethod
+    def calculate_penalty_rate(
+        accumulated_weight: float, is_priority_track: bool
+    ) -> float:
+        """Calculate a capped rotation penalty, protecting high-priority tracks."""
+        if is_priority_track:
+            return 0.0
+        return min(0.02, max(0.0, accumulated_weight) * 0.005)
+
+    @staticmethod
+    def apply_rotation_budget(
+        candidate_selected: List[Any],
+        prev_mix_ids: Set[str],
+        prev_mix_songs_map: Dict[str, Any],
+        score_details: Dict[str, Dict[str, Any]],
+        limit: int,
+        max_budget: int,
+    ) -> List[Any]:
+        """Replace repeated tracks with the highest-scoring fresh candidates."""
+        selected = list(candidate_selected[:max(0, limit)])
+        if not selected or max_budget <= 0:
+            return selected
+
+        previous_ids = prev_mix_ids.intersection(prev_mix_songs_map)
+        selected_ids = {song.id for song in selected}
+        repeated = [song for song in selected if song.id in previous_ids]
+        replacements = [
+            details["song"]
+            for song_id, details in score_details.items()
+            if song_id not in selected_ids and song_id not in previous_ids
+        ]
+        replacements.sort(
+            key=lambda song: score_details[song.id]["final_score"],
+            reverse=True,
+        )
+        repeated.sort(
+            key=lambda song: score_details[song.id]["final_score"]
+        )
+
+        for old_song, new_song in zip(repeated[:max_budget], replacements):
+            selected[selected.index(old_song)] = new_song
+
+        selected.sort(
+            key=lambda song: score_details[song.id]["final_score"],
+            reverse=True,
+        )
+        return selected
 
     @staticmethod
     def apply_rotation(
