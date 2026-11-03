@@ -44,8 +44,10 @@ class TranslationResourceTests(unittest.TestCase):
                 locale = json.loads(
                     (TRANSLATION_DIR / f"{code}.json").read_text(encoding="utf-8")
                 )
-                self.assertTrue(set(locale) - {"__meta__"})
+                translated_keys = set(locale) - {"__meta__"}
+                self.assertTrue(translated_keys)
                 self.assertTrue(set(english) - set(locale))
+                self.assertGreaterEqual(len(translated_keys) / (len(english) - 1), 0.8)
 
     def test_translation_placeholders_match_english(self):
         import re
