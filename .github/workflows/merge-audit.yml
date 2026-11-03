@@ -30,5 +30,7 @@ jobs:
             exit "$status"
           fi
           tree_sha="$(printf '%s\n' "$merge_output" | head -n 1)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           merge_sha="$(printf 'Temporary merge preview of main into PR4 branch\n' | git commit-tree "$tree_sha" -p HEAD -p origin/main)"
           git push origin "$merge_sha:refs/heads/integration/merge-preview"
