@@ -1,7 +1,7 @@
 """再生履歴情報を表すデータモデル。"""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 
@@ -27,21 +27,31 @@ class HistoryEntry:
             HistoryEntry: 生成されたHistoryEntryインスタンス。
         """
         played_at_val: Optional[datetime] = None
-        if "time" in data:
+        # getRecentPlayed uses "played"; getHistory commonly uses "time".
+        time_val = data.get("played")
+        if time_val is None:
+            time_val = data.get("time")
+        if time_val is not None:
             try:
-                # Subsonic APIのタイムスタンプ (ミリ秒単位 Unix Time または ISO文字列)
-                time_val = data["time"]
                 if isinstance(time_val, (int, float)):
-                    played_at_val = datetime.fromtimestamp(time_val / 1000.0)
+                    # Subsonic timestamps are Unix milliseconds.
+                    played_at_val = datetime.fromtimestamp(
+                        time_val / 1000.0, tz=timezone.utc
+                    )
                 elif isinstance(time_val, str):
-                    played_at_val = datetime.fromisoformat(
+                    parsed = datetime.fromisoformat(
                         time_val.replace("Z", "+00:00")
                     )
-            except Exception:
+                    played_at_val = (
+                        parsed.replace(tzinfo=timezone.utc)
+                        if parsed.tzinfo is None
+                        else parsed.astimezone(timezone.utc)
+                    )
+            except (TypeError, ValueError, OverflowError):
                 played_at_val = None
 
         return cls(
-            song_id=data.get("id", data.get("songId", "")),
+            song_id=str(data.get("id") or data.get("songId") or ""),
             title=data.get("title", "Unknown Title"),
             artist=data.get("artist", "Unknown Artist"),
             album=data.get("album"),

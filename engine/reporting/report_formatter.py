@@ -51,8 +51,14 @@ class ReportFormatter:
         for row in data.utilization:
             res.append(f"{row.label:<20} : {row.candidates:>4} / {row.used:<3} ({row.ratio:>5.1f}%)")
         
-        eff = (data.strat_initial_count / 300 * 100) if 300 > 0 else 0
-        res.append(f"{'Top300 Used':<20} : {data.strat_initial_count:>3} songs ({eff:>5.1f}%)")
+        top_pool_size = min(300, data.pool_count)
+        eff = (
+            data.strat_initial_count / top_pool_size * 100
+            if top_pool_size > 0 else 0.0
+        )
+        res.append(
+            f"{'Top Pool Used':<20} : {data.strat_initial_count:>3} songs ({eff:>5.1f}%)"
+        )
         res.append("")
 
         # 4. Rotation / Score Summary
@@ -86,11 +92,13 @@ class ReportFormatter:
                 label = "Nostalgic Picks"
             else:
                 label = display_map.get(k, k.replace("_", " ").capitalize())
-            percentage = (v / data.final_total * 100) if data.final_total else 0
-            res.append(f"{label:<20} : {int(percentage):>3}%")
+            res.append(f"{label:<20} : {int(v / data.final_total * 100) if data.final_total > 0 else 0:>3}%")
         
         if data.refill_total > 0:
-            refill_percentage = (data.refill_total / data.final_total * 100) if data.final_total else 0
+            refill_percentage = (
+                data.refill_total / data.final_total * 100
+                if data.final_total > 0 else 0
+            )
             res.append(f"{'Refill System':<20} : {int(refill_percentage):>3}%")
 
         res.append("--------------------------------------------------")

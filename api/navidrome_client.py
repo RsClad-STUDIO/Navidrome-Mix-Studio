@@ -1,4 +1,4 @@
-"""Navidrome Subsonic APIとの通信を担当するクライアントモジュール。"""
+"""Navidrome APIとの通信を担当するクライアントモジュール。 (Phase 13.3 対応版)"""
 
 import logging
 import time
@@ -32,13 +32,13 @@ class NavidromeClient:
 
     @staticmethod
     def _as_list(value: Any) -> List[Dict[str, Any]]:
-        """Normalize Subsonic JSON fields that may be objects or arrays."""
+        """Subsonic JSONの単一オブジェクト／配列の揺れを正規化します。"""
         if value is None:
             return []
         return value if isinstance(value, list) else [value]
 
     def test_connection(self) -> ConnectionResult:
-        """Navidrome APIへの接続をテストする。"""
+        """Phase 11: 接続テストを実施する。"""
         if not self.server_url:
             return ConnectionResult(success=False, error_message="Server URL is empty")
 
@@ -86,7 +86,7 @@ class NavidromeClient:
         *,
         raise_on_error: bool = False,
     ) -> Dict[str, Any]:
-        """通常は失敗を空応答に変換し、完全取得処理では失敗を呼び出し元へ通知する。"""
+        """汎用リクエスト。通常は安全に空応答へ変換し、完全取得処理では例外を通知する。"""
         if not self.server_url:
             if raise_on_error:
                 raise RuntimeError("Navidrome server URL is empty")
@@ -145,15 +145,55 @@ class NavidromeClient:
     def get_starred_artists(self) -> List[Dict[str, Any]]:
         return self.get_starred().get("artist", [])
 
+
+
+    def get_artists(self) -> List[Dict[str, Any]]:
+        """getArtistsのインデックスを平坦化してアーティスト一覧を返す。"""
+        response = self._request("getArtists")
+        artists_data = response.get("artists") or {}
+        indexes = artists_data.get("index") or []
+        if isinstance(indexes, dict):
+            indexes = [indexes]
+
+        artists: List[Dict[str, Any]] = []
+        for index in indexes:
+            entries = index.get("artist", [])
+            if isinstance(entries, dict):
+                entries = [entries]
+            artists.extend(entries)
+
+        # サーバー実装によってはindexを介さずartistを返す場合に対応する。
+        direct_entries = artists_data.get("artist") or []
+        if isinstance(direct_entries, dict):
+            direct_entries = [direct_entries]
+        artists.extend(direct_entries)
+        return artists
+
+    def get_albums(self, size: int = 500) -> List[Dict[str, Any]]:
+        """getAlbumList2から指定件数のアルバム一覧を取得する。"""
+        if size <= 0:
+            return []
+
+        response = self._request(
+            "getAlbumList2",
+            {
+                "type": "alphabeticalByName",
+                "size": str(size),
+                "offset": "0",
+            },
+        )
+        albums = (response.get("albumList2") or {}).get("album") or []
+        return [albums] if isinstance(albums, dict) else albums
+
     def search_songs(
         self,
         query: str = "",
         count: Optional[int] = None,
         size: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """search3をオフセットページングし、上限未指定時は全曲を取得する。
+        """search3をオフセットページングし、指定がなければ全曲を取得する。
 
-        count/sizeは後方互換用の総取得上限。1回の要求は最大500曲。
+        count/sizeは後方互換用の総取得上限。APIへの1回の要求は最大500曲。
         """
         total_limit = count if count is not None else size
         if total_limit is not None and total_limit <= 0:
@@ -206,7 +246,8 @@ class NavidromeClient:
                 break
 
         self._logger.info(
-            "Fetched %s songs from Navidrome (query=%r)", len(songs), query
+            "Fetched %s songs from Navidrome (query=%r)",
+            len(songs), query
         )
         return songs
 
@@ -223,25 +264,36 @@ class NavidromeClient:
     def get_history(
         self, count: int = 500, size: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        """再生履歴を取得します。getRecentPlayed / getHistory / getNowPlaying を段階的に試行。"""
+        """履歴を取得。正常な空履歴とAPI取得失敗を区別するため、通信エラーを通知する。"""
         limit = size if size is not None else count
+        attempts = (
+            ("getRecentPlayed", {"count": str(limit)}, "recentPlayed", "entry"),
+            ("getHistory", {"size": str(limit)}, "history", "item"),
+        )
+        errors = []
+        successful_responses = 0
 
-        # 1. getRecentPlayed (最も標準的)
-        res = self._request("getRecentPlayed", {"count": str(limit)})
-        recent = self._as_list((res.get("recentPlayed") or {}).get("entry"))
-        if recent:
-            return recent
+        for endpoint, params, response_key, entry_key in attempts:
+            try:
+                response = self._request(endpoint, params, raise_on_error=True)
+            except RuntimeError as exc:
+                # Unsupported endpoints may be skipped; other failures mean history
+                # availability cannot be established.
+                if "404" not in str(exc) and "endpoint not found" not in str(exc).lower():
+                    errors.append(str(exc))
+                continue
 
-        # 2. getHistory (Scrobble 履歴)
-        res = self._request("getHistory", {"size": str(limit)})
-        history = self._as_list((res.get("history") or {}).get("item"))
-        if history:
-            return history
+            successful_responses += 1
+            entries = (response.get(response_key) or {}).get(entry_key, [])
+            normalized = self._as_list(entries)
+            if normalized:
+                return normalized
 
-        # 3. getNowPlaying (現在再生中・直近)
-        res = self._request("getNowPlaying")
-        now_playing = (res.get("nowPlaying") or {}).get("entry")
-        return self._as_list(now_playing)
+        if errors:
+            raise RuntimeError("Unable to retrieve playback history: " + "; ".join(errors))
+        if successful_responses == 0:
+            raise RuntimeError("No supported playback-history endpoint could be queried")
+        return []
 
     def create_playlist(self, name: str, song_ids: List[str]) -> Optional[Dict[str, Any]]:
         """新しいプレイリストを作成します。"""
@@ -297,44 +349,6 @@ class NavidromeClient:
         except Exception as e:
             self._logger.error(f"Error updating playlist: {e}")
             return None
-
-    def get_artists(self) -> List[Dict[str, Any]]:
-        """getArtistsのインデックスを平坦化してアーティスト一覧を返す。"""
-        response = self._request("getArtists")
-        artists_data = response.get("artists") or {}
-        indexes = artists_data.get("index") or []
-        if isinstance(indexes, dict):
-            indexes = [indexes]
-
-        artists: List[Dict[str, Any]] = []
-        for index in indexes:
-            entries = index.get("artist", [])
-            if isinstance(entries, dict):
-                entries = [entries]
-            artists.extend(entries)
-
-        # サーバー実装によってはindexを介さずartistを返す場合に対応する。
-        direct_entries = artists_data.get("artist") or []
-        if isinstance(direct_entries, dict):
-            direct_entries = [direct_entries]
-        artists.extend(direct_entries)
-        return artists
-
-    def get_albums(self, size: int = 500) -> List[Dict[str, Any]]:
-        """getAlbumList2から指定件数のアルバム一覧を取得する。"""
-        if size <= 0:
-            return []
-
-        response = self._request(
-            "getAlbumList2",
-            {
-                "type": "alphabeticalByName",
-                "size": str(size),
-                "offset": "0",
-            },
-        )
-        albums = (response.get("albumList2") or {}).get("album") or []
-        return [albums] if isinstance(albums, dict) else albums
 
     def get_playlists(self) -> List[Dict[str, Any]]:
         """プレイリスト一覧を取得します。"""

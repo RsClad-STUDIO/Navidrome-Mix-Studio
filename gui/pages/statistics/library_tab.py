@@ -1,4 +1,4 @@
-"""ライブラリ統計を表示するタブ。"""
+"""Phase 13.2: LibraryTab - Polished & Hardcode-Free."""
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QScrollArea, QGridLayout, QLabel, QTableWidgetItem, QMessageBox
@@ -71,7 +71,15 @@ class LibraryTab(QWidget):
         self.setCursor(Qt.CursorShape.WaitCursor)
         try:
             songs = self._context.library_service.fetch_songs()
-            profile = self._context.mix_service.analyze_library(songs)
+            favorites_service = self._context.favorites_service
+            if favorites_service:
+                favorites_service.sync_favorites()
+                for song in songs:
+                    song.starred = favorites_service.is_song_favorite(song.id)
+            profile = self._context.mix_service.analyze_library(
+                songs,
+                force_refresh=True,
+            )
             self.lbl_songs_val.setText(str(profile.total_songs))
             self.lbl_albums_val.setText(str(profile.total_albums))
             self.lbl_artists_val.setText(str(profile.total_artists))
@@ -81,8 +89,7 @@ class LibraryTab(QWidget):
             top = sorted(profile.artist_distribution.items(), key=lambda x: x[1], reverse=True)[:15]
             self.table.setRowCount(len(top))
             for i, (art, ratio) in enumerate(top):
-                display_artist = tr(TKey.COMMON_UNKNOWN_ARTIST) if art == "Unknown Artist" else art
-                self.table.setItem(i, 0, QTableWidgetItem(display_artist))
+                self.table.setItem(i, 0, QTableWidgetItem(tr(TKey.COMMON_UNKNOWN_ARTIST) if art == "Unknown Artist" else art))
                 item = QTableWidgetItem(f"{ratio:.2f} %")
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.table.setItem(i, 1, item)

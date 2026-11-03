@@ -3,11 +3,12 @@ from .base_strategy import BaseStrategy
 from models.song import Song
 from models.music_score import MusicScore
 from engine.non_favorite_recommender import NonFavoriteRecommender
+from .strategy_config import DiscoveryMixConfig
 
 class DiscoveryStrategy(BaseStrategy):
     def generate(self, scored_list: List[MusicScore], days_map: Dict[str, int], limit: int, clean_pool: List[Song], context: Dict[str, Any]) -> List[Song]:
         # 候補：再生回数 3回未満
-        unheard_pool = [s for s in clean_pool if s.play_count < 3 and not s.starred]
+        unheard_pool = [s for s in clean_pool if s.play_count < DiscoveryMixConfig.PLAY_COUNT_THRESHOLD_INITIAL and not s.starred]
         actual_favorites = [ms.song for ms in scored_list if ms.song.starred]
         fav_artists = {s.artist for s in actual_favorites if s.artist}
 
@@ -18,7 +19,7 @@ class DiscoveryStrategy(BaseStrategy):
         recs, stats = NonFavoriteRecommender.get_recommendations(unheard_pool, actual_favorites, limit * 5, discovery_context)
         
         raw_candidates = []
-        n_similarity_limit = int(limit * 0.4) 
+        n_similarity_limit = int(limit * DiscoveryMixConfig.SIMILARITY_LIMIT_RATIO) 
         sim_count = 0
         
         # 高速化のための Set

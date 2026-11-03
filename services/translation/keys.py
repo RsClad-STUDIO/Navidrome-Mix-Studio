@@ -29,6 +29,7 @@ class TKey(StrEnum):
     MIX_CHECKBOX_DEMO = "mix.checkbox.demo"
     MIX_CHECKBOX_ACOUSTIC = "mix.checkbox.acoustic"
     MIX_PLAYLIST_TITLE_SUFFIX = "mix.playlist.title_suffix"
+    MIX_HISTORY_DUPLICATE_NOTICE = "mix.history.duplicate_notice"
 
     # --- Strategy Names ---
     STRATEGY_DAILY_NAME = "mix.strategy.daily.name"
@@ -207,6 +208,9 @@ class TKey(StrEnum):
     # --- Sidebar ---
     MAIN_SIDEBAR_ABOUT = "main.sidebar.about"
 
+    # --- Additional translations used by current UI ---
+    SETTINGS_PROFILE_NAME_EMPTY = "settings.profile.name_empty"
+    SETTINGS_PROFILE_NAME_DUPLICATE = "settings.profile.name_duplicate"
 
     # --- Dialogs ---
     # --- Restart Dialog ---
@@ -214,10 +218,10 @@ class TKey(StrEnum):
     DIALOG_RESTART_REQUIRED_MSG = "dialog.restart_required.msg"
     DIALOG_ERROR_TITLE = "dialog.error.title"
     DIALOG_ERROR_GEN_FAILED = "dialog.error.gen_failed"
+    DIALOG_ERROR_SAVE_FAILED = "dialog.error.save_failed"
     DIALOG_SUCCESS_TITLE = "dialog.success.title"
     DIALOG_SUCCESS_SAVE = "dialog.success.save"
     DIALOG_DELETE_PLAYLIST_TITLE = "playlist_manager.dialog.delete.title"
-    PLAYLIST_MGR_NO_OLD_GENERATED = "playlist_manager.no_old_generated"
     DIALOG_DELETE_PLAYLIST_MSG = "playlist_manager.dialog.delete.msg"
     DIALOG_CLEANUP_TITLE = "playlist_manager.dialog.cleanup.title"
     DIALOG_CLEANUP_MSG = "playlist_manager.dialog.cleanup.msg"

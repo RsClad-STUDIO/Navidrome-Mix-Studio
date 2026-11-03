@@ -19,7 +19,11 @@ class TranslationResourceTests(unittest.TestCase):
         cls.english.pop("__meta__", None)
         cls.japanese.pop("__meta__", None)
         keys_source = KEYS_FILE.read_text(encoding="utf-8")
-        cls.translation_keys = re.findall(r'^\s+[A-Z][A-Z0-9_]+\s*=\s*"([^"]+)"', keys_source, re.MULTILINE)
+        cls.translation_keys = re.findall(
+            r'^\s+[A-Z][A-Z0-9_]+\s*=\s*"([^"]+)"',
+            keys_source,
+            re.MULTILINE,
+        )
 
     def test_japanese_and_english_have_the_same_keys(self):
         self.assertEqual(set(self.english), set(self.japanese))
@@ -29,6 +33,10 @@ class TranslationResourceTests(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertIn(key, self.english)
                 self.assertIn(key, self.japanese)
+                self.assertIsInstance(self.english[key], str)
+                self.assertIsInstance(self.japanese[key], str)
+                self.assertTrue(self.english[key].strip())
+                self.assertTrue(self.japanese[key].strip())
 
     def test_translation_placeholders_match(self):
         pattern = re.compile(r"\{([A-Za-z_]\w*)\}")

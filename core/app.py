@@ -22,7 +22,7 @@ from services.playlist_service import PlaylistService
 from services.preset_service import PresetService
 from services.scheduler_service import SchedulerService
 from services.mix_history_service import MixHistoryService
-from services.translation import TranslationManager # 追加
+from services.translation import TranslationManager
 from PySide6.QtGui import QIcon
 
 class Application:
@@ -40,7 +40,7 @@ class Application:
         self._logger.info("Initializing Navidrome Mix Studio Phase 13.1...")
 
         # --- Phase 13.1: 翻訳基盤の初期化 (GUIより先に行う) ---
-        lang = self._settings.get("language", "ja") # デフォルトを日本語に
+        lang = self._settings.get("language", "ja")
         TranslationManager.instance().load_language(lang)
 
         # 1. 共通基盤（キャッシュ等）の初期化
@@ -62,12 +62,15 @@ class Application:
         self._analysis_service = AnalysisService(self._logger)
         self._blacklist_service = BlacklistService(logger=self._logger)
         self._preset_service = PresetService(logger=self._logger)
-        self._mix_history_service = MixHistoryService()
+        self._mix_history_service = MixHistoryService(
+            namespace=f"{self._client.server_url}|{self._client.username}"
+        )
 
         # 4. 分析およびお気に入りサービスの初期化
         self._library_analyzer = LibraryAnalyzer(
-            cache_manager=self._cache_manager, 
-            logger=self._logger
+            cache_manager=self._cache_manager,
+            logger=self._logger,
+            cache_namespace=f"{self._client.server_url}|{self._client.username}",
         )
         self._favorites_service = FavoritesService(
             self._client, self._cache_manager, self._logger
@@ -120,7 +123,7 @@ class Application:
             scheduler_service=self._scheduler_service,
         )
 
-        # 7. メインウィンドウの起動 (この時点で TranslationManager は準備完了している)
+        # 7. メインウィンドウの起動
         self._main_window = MainWindow(context=self._context)
 
     def _establish_connection(self) -> NavidromeClient:
@@ -144,8 +147,24 @@ class Application:
 
         return NavidromeClient("", "", "", self._logger)
 
+    def _apply_scheduler_settings(self) -> None:
+        """保存済みのスケジューラー設定を実行中サービスへ反映します。"""
+        if not self._settings.get("scheduler.enabled", False):
+            self._scheduler_service.stop()
+            return
+
+        self._scheduler_service.start(
+            mode=self._settings.get("scheduler.mode", "daily"),
+            target_time=self._settings.get("scheduler.time", "07:00"),
+            interval_hours=self._settings.get("scheduler.interval_hours", 6),
+            default_mix_type=self._settings.get("mix.default_type", "Favorites Mix"),
+            default_count=self._settings.get("mix.default_count", 50),
+            auto_overwrite=self._settings.get("mix.auto_update", False),
+        )
+
     def run(self) -> int:
         self._main_window.show()
+        self._apply_scheduler_settings()
         result = self._qapp.exec()
         if self._scheduler_service:
             self._scheduler_service.stop()

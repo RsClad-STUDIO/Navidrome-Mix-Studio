@@ -43,8 +43,20 @@ class MixService:
         """直近の生成で使用された全楽曲のスコア詳細（MusicScoreのリスト）を返します。"""
         return getattr(self._generator, "_last_scored_list", [])
 
-    def save_to_navidrome(self, mix_name: str, songs: List[Song]):
+    def was_last_mix_history_duplicate(self) -> bool:
+        """直近のMix生成が履歴重複により保存をスキップされたかを返します。"""
+        checker = getattr(self._generator, "was_last_mix_history_duplicate", None)
+        return bool(checker()) if callable(checker) else False
+
+    def save_to_navidrome(
+        self,
+        mix_name: str,
+        songs: List[Song],
+        auto_overwrite: bool = True,
+    ):
         """生成されたMixをNavidromeのプレイリストとして保存します。"""
         if self._playlist_service:
-            return self._playlist_service.create_mix_playlist(mix_name, songs)
+            return self._playlist_service.create_mix_playlist(
+                mix_name, songs, auto_overwrite=auto_overwrite
+            )
         return None

@@ -1,4 +1,4 @@
-"""接続情報やアプリケーション動作設定を管理する画面。"""
+"""Phase 13.4: SettingsPage - Final Polished version."""
 
 from typing import TYPE_CHECKING, List, Optional
 from PySide6.QtWidgets import (
@@ -8,10 +8,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTime, Qt
 from api.navidrome_client import NavidromeClient
+from gui.dialogs.about_dialog import AboutDialog
 from models.server_profile import ServerProfile
 from services.translation import tr, TKey, TranslationManager
-from gui.dialogs.about_dialog import AboutDialog
-
 if TYPE_CHECKING:
     from core.context import AppContext
 
@@ -21,9 +20,8 @@ class SettingsPage(QWidget):
         self._context: "AppContext" = context
         self._profiles: List[ServerProfile] = []
         self._last_test_result = None
-        
+
         self._init_ui()
-        # 翻訳信号の接続
         TranslationManager.instance().language_changed.connect(self.retranslate_ui)
         self.retranslate_ui()
         self._load_settings()
@@ -38,16 +36,12 @@ class SettingsPage(QWidget):
         self._init_general_tab()
         layout.addWidget(self.tabs)
 
-        # 下部ボタンエリア
         btn_layout = QHBoxLayout()
-        
-        # Aboutボタン
         self.btn_about = QPushButton("?")
         self.btn_about.setFixedSize(30, 30)
         self.btn_about.setToolTip(tr(TKey.SETTINGS_ABOUT_TOOLTIP))
         self.btn_about.clicked.connect(self._on_about_clicked)
         btn_layout.addWidget(self.btn_about)
-
         btn_layout.addStretch()
 
         self.btn_reset = QPushButton()
@@ -58,14 +52,11 @@ class SettingsPage(QWidget):
         self.btn_save_all.setStyleSheet("height: 35px; font-weight: bold; min-width: 180px;")
         self.btn_save_all.clicked.connect(self._on_save)
         btn_layout.addWidget(self.btn_save_all)
-        
         layout.addLayout(btn_layout)
 
     def _init_server_tab(self) -> None:
         tab = QWidget(); scroll = QScrollArea(); scroll.setWidgetResizable(True)
         container = QWidget(); lyt = QVBoxLayout(container); lyt.setSpacing(20)
-
-        # 1. Profile Select
         self.group_prof_list = QGroupBox()
         plist_lyt = QHBoxLayout(self.group_prof_list)
         self.lbl_active_prof = QLabel()
@@ -77,7 +68,6 @@ class SettingsPage(QWidget):
         plist_lyt.addWidget(self.btn_add); plist_lyt.addWidget(self.btn_delete)
         lyt.addWidget(self.group_prof_list)
 
-        # 2. Connection Details
         self.group_details = QGroupBox()
         det_lyt = QGridLayout(self.group_details)
         self.lbl_prof_name = QLabel(); self.edit_prof_name = QLineEdit()
@@ -94,7 +84,6 @@ class SettingsPage(QWidget):
         det_lyt.addWidget(self.btn_test_conn, 5, 1, Qt.AlignmentFlag.AlignRight)
         lyt.addWidget(self.group_details)
 
-        # 3. Failover Priority
         self.group_priority = QGroupBox()
         pri_lyt = QGridLayout(self.group_priority)
         self.lbl_primary = QLabel(); self.combo_primary = QComboBox()
@@ -102,13 +91,11 @@ class SettingsPage(QWidget):
         pri_lyt.addWidget(self.lbl_primary, 0, 0); pri_lyt.addWidget(self.combo_primary, 0, 1)
         pri_lyt.addWidget(self.lbl_secondary, 1, 0); pri_lyt.addWidget(self.combo_secondary, 1, 1)
         lyt.addWidget(self.group_priority)
-
         lyt.addStretch(); scroll.setWidget(container)
         v = QVBoxLayout(tab); v.addWidget(scroll); self.tabs.addTab(tab, "")
 
     def _init_general_tab(self) -> None:
         tab = QWidget(); lyt = QVBoxLayout(tab)
-        # Language
         self.group_lang = QGroupBox()
         lang_lyt = QHBoxLayout(self.group_lang)
         self.lbl_lang = QLabel(); self.combo_lang = QComboBox()
@@ -117,19 +104,16 @@ class SettingsPage(QWidget):
         self.combo_lang.currentIndexChanged.connect(self._on_language_ui_changed)
         lang_lyt.addWidget(self.lbl_lang); lang_lyt.addWidget(self.combo_lang); lang_lyt.addStretch()
         lyt.addWidget(self.group_lang)
-        # Cache
         self.group_cache = QGroupBox(); clyt = QGridLayout(self.group_cache)
         self.chk_cache_enable = QCheckBox(); self.lbl_cache_expire = QLabel(); self.spin_cache_expire = QSpinBox()
         self.spin_cache_expire.setRange(1, 720); clyt.addWidget(self.chk_cache_enable, 0, 0, 1, 2)
         clyt.addWidget(self.lbl_cache_expire, 1, 0); clyt.addWidget(self.spin_cache_expire, 1, 1); lyt.addWidget(self.group_cache)
-        # Scheduler
         self.group_sched = QGroupBox(); slyt = QGridLayout(self.group_sched)
         self.chk_sched_enable = QCheckBox(); self.lbl_sched_mode = QLabel(); self.combo_sched_mode = QComboBox()
         self.combo_sched_mode.addItem("", "daily"); self.combo_sched_mode.addItem("", "startup"); self.combo_sched_mode.addItem("", "interval")
         self.lbl_sched_time = QLabel(); self.time_sched = QTimeEdit()
         slyt.addWidget(self.chk_sched_enable, 0, 0, 1, 2); slyt.addWidget(self.lbl_sched_mode, 1, 0); slyt.addWidget(self.combo_sched_mode, 1, 1)
         slyt.addWidget(self.lbl_sched_time, 2, 0); slyt.addWidget(self.time_sched, 2, 1); lyt.addWidget(self.group_sched)
-        # Mix Defaults
         self.group_mix = QGroupBox(); mlyt = QGridLayout(self.group_mix)
         self.lbl_mix_count = QLabel(); self.spin_mix_count = QSpinBox()
         self.spin_mix_count.setRange(1, 200); self.chk_mix_auto = QCheckBox()
@@ -137,7 +121,6 @@ class SettingsPage(QWidget):
         lyt.addWidget(self.group_mix); lyt.addStretch(); self.tabs.addTab(tab, "")
 
     def retranslate_ui(self) -> None:
-        """多言語テキストの適用。"""
         self.tabs.setTabText(0, tr(TKey.SETTINGS_TAB_SERVER)); self.tabs.setTabText(1, tr(TKey.SETTINGS_TAB_GENERAL))
         self.group_prof_list.setTitle(tr(TKey.SETTINGS_GROUP_PROFILES)); self.group_details.setTitle(tr(TKey.SETTINGS_GROUP_DETAILS))
         self.group_priority.setTitle(tr(TKey.SETTINGS_GROUP_PRIORITY)); self.group_lang.setTitle(tr(TKey.SETTINGS_GROUP_LANGUAGE))
@@ -154,12 +137,9 @@ class SettingsPage(QWidget):
         self.btn_add.setText(tr(TKey.SETTINGS_BTN_ADD)); self.btn_delete.setText(tr(TKey.SETTINGS_BTN_DELETE))
         self.btn_test_conn.setText(tr(TKey.SETTINGS_BTN_TEST_CONN)); self.btn_save_all.setText(tr(TKey.SETTINGS_BTN_SAVE))
         self.btn_reset.setText(tr(TKey.SETTINGS_BTN_RESET))
-        
-        # スケジュールモード名の翻訳更新
         sm = {"daily": TKey.SETTINGS_SCHED_MODE_DAILY, "startup": TKey.SETTINGS_SCHED_MODE_STARTUP, "interval": TKey.SETTINGS_SCHED_MODE_INTERVAL}
         for i in range(self.combo_sched_mode.count()):
             self.combo_sched_mode.setItemText(i, tr(sm.get(self.combo_sched_mode.itemData(i))))
-        
         if not self._last_test_result: self.lbl_test_status.setText(tr(TKey.SETTINGS_STATUS_NOT_TESTED))
         else: self._update_status_label(self._last_test_result)
 
@@ -176,12 +156,10 @@ class SettingsPage(QWidget):
         p_data = s.get("profiles", [])
         self._profiles = [ServerProfile.from_dict(d) for d in p_data] if p_data else [ServerProfile(name="Local", url="", username="", password="")]
         self._refresh_profile_combos(s.get("active_profile", "Local"))
-        
         self.combo_lang.blockSignals(True)
         idx = self.combo_lang.findData(TranslationManager.instance().current_lang)
         if idx >= 0: self.combo_lang.setCurrentIndex(idx)
         self.combo_lang.blockSignals(False)
-
         self.chk_cache_enable.setChecked(s.get("cache.enabled", True))
         self.spin_cache_expire.setValue(s.get("cache.expire_hours", 24))
         self.chk_sched_enable.setChecked(s.get("scheduler.enabled", False))
@@ -212,7 +190,7 @@ class SettingsPage(QWidget):
             self.lbl_test_status.setText(tr(TKey.SETTINGS_STATUS_NOT_TESTED)); self.lbl_test_status.setStyleSheet("color: gray;"); self._last_test_result = None
 
     def _on_add_profile(self) -> None:
-        name = tr(TKey.SETTINGS_PROFILE_NEW_FORMAT, number=len(self._profiles) + 1)
+        name = tr(TKey.SETTINGS_PROFILE_NEW_FORMAT, number=len(self._profiles)+1)
         self._profiles.append(ServerProfile(name=name, url="", username="", password=""))
         self._refresh_profile_combos(name)
 
@@ -221,8 +199,20 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, tr(TKey.SETTINGS_TITLE), tr(TKey.WARNING_PROFILE_REQUIRED))
             return
         idx = self.combo_profiles.currentIndex()
-        if QMessageBox.question(self, tr(TKey.DIALOG_CONFIRM_DELETE_TITLE), tr(TKey.DIALOG_CONFIRM_DELETE_MSG, name=self._profiles[idx].name)) == QMessageBox.StandardButton.Yes:
-            self._profiles.pop(idx); self._refresh_profile_combos(self._profiles[0].name)
+        if idx < 0 or idx >= len(self._profiles):
+            return
+        removed_name = self._profiles[idx].name
+        if QMessageBox.question(self, tr(TKey.DIALOG_CONFIRM_DELETE_TITLE), tr(TKey.DIALOG_CONFIRM_DELETE_MSG, name=removed_name)) == QMessageBox.StandardButton.Yes:
+            self._profiles.pop(idx)
+            remaining_names = [profile.name for profile in self._profiles]
+            settings = self._context.settings
+            if settings.get("server.primary", "Local") == removed_name:
+                settings.set("server.primary", remaining_names[0])
+            if settings.get("server.secondary", "None") == removed_name:
+                settings.set("server.secondary", "None")
+            if settings.get("active_profile", "Local") == removed_name:
+                settings.set("active_profile", remaining_names[0])
+            self._refresh_profile_combos(settings.get("active_profile", remaining_names[0]))
 
     def _on_test_connection(self) -> None:
         self.lbl_test_status.setText(tr(TKey.SETTINGS_STATUS_CONNECTING)); self.lbl_test_status.setStyleSheet("color: orange;")
@@ -240,26 +230,45 @@ class SettingsPage(QWidget):
     def _on_save(self) -> None:
         """全ての情報を一括保存し、必要に応じて再起動を促す。"""
         s = self._context.settings
-        
-        # 1. 保存前の接続設定を保持（比較用）
-        # 現在のクライアント、または設定ファイルから取得
-        old_url = s.get("connection.server_url", "")
-        old_user = s.get("connection.username", "")
-        old_pass = s.get("connection.password", "")
+        old_primary = s.get("server.primary", "Local")
+        old_secondary = s.get("server.secondary", "None")
+        old_profiles = s.get("profiles", [])
+        old_scheduler = (
+            s.get("scheduler.enabled", False),
+            s.get("scheduler.mode", "daily"),
+            s.get("scheduler.time", "07:00"),
+            s.get("scheduler.interval_hours", 6),
+            s.get("mix.default_type", "Favorites Mix"),
+            s.get("mix.default_count", 50),
+            s.get("mix.auto_update", False),
+        )
 
-        # 2. 編集中のプロファイル内容を同期
+        primary_name = self.combo_primary.currentText()
+        secondary_name = self.combo_secondary.currentText()
         idx = self.combo_profiles.currentIndex()
         if idx >= 0:
-            self._profiles[idx].name = self.edit_prof_name.text()
-            self._profiles[idx].url = self.edit_server_url.text()
-            self._profiles[idx].username = self.edit_username.text()
+            old_profile_name = self._profiles[idx].name
+            new_profile_name = self.edit_prof_name.text().strip()
+            self.edit_prof_name.setText(new_profile_name)
+            if not new_profile_name:
+                QMessageBox.warning(self, tr(TKey.SETTINGS_TITLE), tr(TKey.SETTINGS_PROFILE_NAME_EMPTY))
+                return
+            if any(i != idx and p.name.casefold() == new_profile_name.casefold() for i, p in enumerate(self._profiles)):
+                QMessageBox.warning(self, tr(TKey.SETTINGS_TITLE), tr(TKey.SETTINGS_PROFILE_NAME_DUPLICATE))
+                return
+            self._profiles[idx].name = new_profile_name
+            self._profiles[idx].url = self.edit_server_url.text().strip()
+            self._profiles[idx].username = self.edit_username.text().strip()
             self._profiles[idx].password = self.edit_password.text()
+            if primary_name == old_profile_name:
+                primary_name = new_profile_name
+            if secondary_name == old_profile_name:
+                secondary_name = new_profile_name
 
-        # 3. 設定オブジェクトへの値セット
         s.set("profiles", [p.to_dict() for p in self._profiles])
         s.set("active_profile", self.edit_prof_name.text())
-        s.set("server.primary", self.combo_primary.currentText())
-        s.set("server.secondary", self.combo_secondary.currentText())
+        s.set("server.primary", primary_name)
+        s.set("server.secondary", secondary_name)
         s.set("language", self.combo_lang.currentData())
         s.set("scheduler.enabled", self.chk_sched_enable.isChecked())
         s.set("scheduler.mode", self.combo_sched_mode.currentData())
@@ -268,36 +277,72 @@ class SettingsPage(QWidget):
         s.set("cache.expire_hours", self.spin_cache_expire.value())
         s.set("mix.default_count", self.spin_mix_count.value())
         s.set("mix.auto_update", self.chk_mix_auto.isChecked())
-        
-        # 接続設定の更新（下位互換性/即時反映準備用）
         s.set("connection.server_url", self.edit_server_url.text())
         s.set("connection.username", self.edit_username.text())
         s.set("connection.password", self.edit_password.text())
 
-        # 4. 変更検知（URL, User, Passのいずれか）
-        conn_changed = (
-            old_url != self.edit_server_url.text() or
-            old_user != self.edit_username.text() or
-            old_pass != self.edit_password.text()
-        )
+        new_profiles = [profile.to_dict() for profile in self._profiles]
 
-        # 5. 保存
+        def find_profile(profiles, name):
+            return next(
+                (profile for profile in profiles if profile.get("name") == name),
+                None,
+            )
+
+        old_primary_profile = find_profile(old_profiles, old_primary)
+        old_secondary_profile = find_profile(old_profiles, old_secondary)
+        new_primary_profile = find_profile(new_profiles, primary_name)
+        new_secondary_profile = find_profile(new_profiles, secondary_name)
+        conn_changed = (
+            old_primary != primary_name
+            or old_secondary != secondary_name
+            or old_primary_profile != new_primary_profile
+            or old_secondary_profile != new_secondary_profile
+        )
+        if not old_profiles:
+            conn_changed = conn_changed or (
+                s.get("connection.server_url", "") != self.edit_server_url.text().strip()
+                or s.get("connection.username", "") != self.edit_username.text().strip()
+                or s.get("connection.password", "") != self.edit_password.text()
+            )
+        new_scheduler = (
+            s.get("scheduler.enabled", False),
+            s.get("scheduler.mode", "daily"),
+            s.get("scheduler.time", "07:00"),
+            s.get("scheduler.interval_hours", 6),
+            s.get("mix.default_type", "Favorites Mix"),
+            s.get("mix.default_count", 50),
+            s.get("mix.auto_update", False),
+        )
+        scheduler_changed = old_scheduler != new_scheduler
         s.save()
 
-        # 6. 通知の表示
+        scheduler = self._context.scheduler_service
+        if scheduler:
+            if not s.get("scheduler.enabled", False):
+                scheduler.stop()
+            elif scheduler_changed:
+                scheduler.start(
+                    mode=s.get("scheduler.mode", "daily"),
+                    target_time=s.get("scheduler.time", "07:00"),
+                    interval_hours=s.get("scheduler.interval_hours", 6),
+                    default_mix_type=s.get("mix.default_type", "Favorites Mix"),
+                    default_count=s.get("mix.default_count", 50),
+                    auto_overwrite=s.get("mix.auto_update", False),
+                    run_on_startup=False,
+                )
+
         if conn_changed:
-            # 接続設定が変わった場合：再起動案内
             QMessageBox.information(
-                self, 
-                tr(TKey.DIALOG_RESTART_REQUIRED_TITLE), 
+                self,
+                tr(TKey.DIALOG_RESTART_REQUIRED_TITLE),
                 tr(TKey.DIALOG_RESTART_REQUIRED_MSG)
             )
         else:
-            # それ以外の設定変更：通常の保存完了通知
             QMessageBox.information(
-                self, 
-                tr(TKey.DIALOG_SAVE_SUCCESS_TITLE), 
+                self,
+                tr(TKey.DIALOG_SAVE_SUCCESS_TITLE),
                 tr(TKey.DIALOG_SAVE_SUCCESS_MSG)
             )
-        
+
         self._refresh_profile_combos(self.edit_prof_name.text())

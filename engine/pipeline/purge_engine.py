@@ -8,11 +8,10 @@ class PurgeEngine:
 
     @staticmethod
     def should_purge(song: Song, config: dict) -> bool:
-        # Always enforce the absolute duration ceiling.
         if song.duration > GlobalConfig.HARD_DURATION_LIMIT:
             return True
 
-        combined_text = f"{song.title} {song.album or ''}"
+        combined_text = f"{song.title or ''} {song.album or ''}"
         version_info = TitleNormalizer.detect_versions(combined_text)
 
         if config.get("suppress_live", False):

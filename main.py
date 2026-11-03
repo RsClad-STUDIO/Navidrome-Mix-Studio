@@ -4,7 +4,6 @@ import logging
 import sys
 
 from core.app import Application
-from engine.recommendation import RecommendationEngine
 import ctypes
 
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(

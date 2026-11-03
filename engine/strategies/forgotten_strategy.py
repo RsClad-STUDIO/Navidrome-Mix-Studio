@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from .base_strategy import BaseStrategy
 from models.song import Song
 from models.music_score import MusicScore
+from .strategy_config import ForgottenMixConfig
 
 class ForgottenStrategy(BaseStrategy):
     """
@@ -15,7 +16,7 @@ class ForgottenStrategy(BaseStrategy):
         # --- レイヤー1: 忘れ去られたお気に入り (Starあり) ---
         forgotten_favs = [
             ms for ms in scored_list 
-            if ms.song.starred and days_map.get(ms.song_id, 999) > 30
+            if ms.song.starred and days_map.get(ms.song_id, 999) > ForgottenMixConfig.RECENT_DAYS_LIMIT
         ]
         # 古い順にソート
         forgotten_favs.sort(key=lambda x: days_map.get(x.song_id, 0), reverse=True)
@@ -31,8 +32,8 @@ class ForgottenStrategy(BaseStrategy):
             nostalgic_gems = [
                 ms for ms in scored_list 
                 if not ms.song.starred 
-                and ms.play_count >= 1 # 0回は絶対に含めない
-                and days_map.get(ms.song_id, 999) > 60
+                and ms.play_count >= ForgottenMixConfig.PLAY_COUNT_MIN # 0回は絶対に含めない
+                and days_map.get(ms.song_id, 999) > ForgottenMixConfig.NON_FAVORITE_DAYS_LIMIT
                 and ms.song not in raw_candidates
             ]
             nostalgic_gems.sort(key=lambda x: days_map.get(x.song_id, 0), reverse=True)

@@ -19,9 +19,12 @@ class LibraryAnalyzer:
         self,
         cache_manager: Optional[CacheManager] = None,
         logger: Optional[logging.Logger] = None,
+        cache_namespace: str = "default",
     ) -> None:
         self._cache_manager = cache_manager
         self._logger = logger or logging.getLogger(__name__)
+        namespace_hash = hashlib.sha256(cache_namespace.encode("utf-8")).hexdigest()[:16]
+        self._cache_key = f"{self.CACHE_KEY}_{namespace_hash}"
 
     def analyze_library(self, songs: List[Song], force_refresh: bool = False) -> LibraryProfile:
         """ライブラリ全体を解析し、キャッシュがあれば再利用してプロファイルを生成します。"""
@@ -43,7 +46,7 @@ class LibraryAnalyzer:
         ).hexdigest()
 
         if not force_refresh and self._cache_manager:
-            cached_data = self._cache_manager.get(self.CACHE_KEY)
+            cached_data = self._cache_manager.get(self._cache_key)
             if (
                 isinstance(cached_data, dict)
                 and cached_data.get("signature") == library_signature
@@ -120,7 +123,7 @@ class LibraryAnalyzer:
 
         if self._cache_manager:
             self._cache_manager.set(
-                self.CACHE_KEY,
+                self._cache_key,
                 {"signature": library_signature, "profile": profile.to_dict()},
             )
 
