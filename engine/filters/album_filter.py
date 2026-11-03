@@ -40,15 +40,20 @@ class AlbumFilter:
         selected = []
 
         for s in songs:
+            norm_title = None
             if self.filter_versions:
                 norm_title = TitleNormalizer.normalize(s.title)
                 if norm_title in seen_titles:
                     continue
-                seen_titles.add(norm_title)
 
             album_key = s.album or "Unknown Album"
             if album_counts[album_key] >= max_per_album:
                 continue
+
+            # A candidate rejected by the album cap must not reserve its title;
+            # a later copy from another album may still be eligible.
+            if norm_title is not None:
+                seen_titles.add(norm_title)
 
             selected.append(s)
             album_counts[album_key] += 1
