@@ -53,7 +53,14 @@ class RefillEngine:
         # no longer inherit the Navidrome API's album/group ordering.
         ranked_scores = list(scored_list)
         random.shuffle(ranked_scores)
-        ranked_scores.sort(key=lambda item: item.total_score, reverse=True)
+        if preset_name == "Favorites Mix":
+            # Favorites Mix may have too few previously-played non-favorites.
+            # Keep played tracks ahead of never-played discovery fallbacks.
+            ranked_scores.sort(
+                key=lambda item: (item.play_count == 0, -item.total_score)
+            )
+        else:
+            ranked_scores.sort(key=lambda item: item.total_score, reverse=True)
 
         for music_score in ranked_scores:
             song = music_score.song
@@ -75,9 +82,13 @@ class RefillEngine:
                 # Bootstrap never-played tracks only when the history endpoint
                 # succeeded and explicitly returned an empty history. Song-level
                 # lastPlayed metadata must not block this zero-history fallback.
+                allow_unplayed_fallback = (
+                    preset_name == "Favorites Mix"
+                    or (history_available and history_empty)
+                )
                 eligible = not song.starred and (
                     music_score.play_count >= 1
-                    or (history_available and history_empty and music_score.play_count == 0)
+                    or (allow_unplayed_fallback and music_score.play_count == 0)
                 )
                 source_tag = "discovery"
 
