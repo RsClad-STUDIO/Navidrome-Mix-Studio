@@ -54,7 +54,12 @@ class RefillEngine:
                     eligible = music_score.play_count >= ForgottenMixConfig.PLAY_COUNT_MIN and days_unplayed > ForgottenMixConfig.NON_FAVORITE_DAYS_LIMIT
                     source_tag = "recent"
             else:
-                eligible = not song.starred and music_score.play_count >= 1
+                # A library with no playback history must still be able to
+                # bootstrap a Daily Mix from never-played tracks. Once history
+                # exists, retain the normal non-favorite/play-count rule.
+                eligible = not song.starred and (
+                    music_score.play_count >= 1 or not days_map
+                )
                 source_tag = "discovery"
 
             if not eligible:
