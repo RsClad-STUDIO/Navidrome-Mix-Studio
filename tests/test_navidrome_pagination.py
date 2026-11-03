@@ -65,6 +65,22 @@ class NavidromePaginationTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "pagination did not advance"):
             self.client.search_songs()
 
+    def test_fetches_more_than_ten_thousand_songs(self):
+        pages = [
+            {"searchResult3": {"song": self.make_page(start, 500)}}
+            for start in range(0, 10000, 500)
+        ]
+        pages.append({"searchResult3": {"song": self.make_page(10000, 1)}})
+        self.client._request.side_effect = pages
+
+        songs = self.client.search_songs()
+
+        self.assertEqual(len(songs), 10001)
+        self.assertEqual(self.client._request.call_count, 21)
+        last_params = self.client._request.call_args_list[-1].args[1]
+        self.assertEqual(last_params["songOffset"], "10000")
+        self.assertEqual(last_params["songCount"], "500")
+
     def test_empty_library_returns_empty_list(self):
         self.client._request.return_value = {"searchResult3": {"song": []}}
 
