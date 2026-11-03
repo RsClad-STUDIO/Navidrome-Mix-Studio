@@ -30,6 +30,11 @@ jobs:
             exit "$status"
           fi
           tree_sha="$(printf '%s\n' "$merge_output" | head -n 1)"
+          git read-tree "$tree_sha"
+          git checkout-index -a
+          git checkout HEAD -- .github/workflows/tests.yml
+          git add .github/workflows/tests.yml
+          tree_sha="$(git write-tree)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           merge_sha="$(printf 'Temporary merge preview of main into PR4 branch\n' | git commit-tree "$tree_sha" -p HEAD -p origin/main)"
