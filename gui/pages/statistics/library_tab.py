@@ -1,4 +1,4 @@
-"""Phase 13.2: LibraryTab - Polished & Hardcode-Free."""
+"""ライブラリ統計を表示するタブ。"""
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QScrollArea, QGridLayout, QLabel, QTableWidgetItem, QMessageBox
