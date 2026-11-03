@@ -101,13 +101,16 @@ The application includes a scheduler with startup, daily, and interval modes. It
 
 ### Languages and Appearance
 
-The interface supports:
+The interface includes the following language resources:
 
 - English
 - Japanese
-- Light and Dark Mode
+- Spanish
+- French
+- German
+- Portuguese (Brazil)
 
-Language changes are applied within the application.
+Light and Dark Mode are also supported. Language changes are applied within the application.
 
 ---
 
