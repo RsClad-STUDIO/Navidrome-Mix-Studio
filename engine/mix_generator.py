@@ -108,6 +108,7 @@ class MixGenerator:
         context = {
             "days_since_last_play": days_map,
             "history_loaded": len(history),
+            "requested_limit": limit,
             "favorite_ratio": favorite_ratio,
             "history_coverage": history_coverage,
             "adaptive_mode": adaptive_mode,
@@ -119,7 +120,7 @@ class MixGenerator:
             scored_list, days_map, limit * 2, clean_pool, context
         )
 
-        div_engine = DiversityEngine(**filter_config, filter_versions=True)
+        div_engine = DiversityEngine(**filter_config, filter_versions=True, target_size=limit)
         unique_candidates = self._unique_by_id(raw_candidates)
         all_filtered = div_engine.apply(unique_candidates)
 
