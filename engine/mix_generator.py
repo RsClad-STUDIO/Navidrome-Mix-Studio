@@ -126,7 +126,19 @@ class MixGenerator:
             scored_list, days_map, limit * 2, clean_pool, context
         )
 
-        div_engine = DiversityEngine(**filter_config, filter_versions=True, target_size=limit)
+        available_album_count = len({
+            song.album or "Unknown Album" for song in clean_pool
+        })
+        available_artist_count = len({
+            song.artist or "Unknown Artist" for song in clean_pool
+        })
+        div_engine = DiversityEngine(
+            **filter_config,
+            filter_versions=True,
+            target_size=limit,
+            available_album_count=available_album_count,
+            available_artist_count=available_artist_count,
+        )
         unique_candidates = self._unique_by_id(raw_candidates)
         all_filtered = div_engine.apply(unique_candidates)
 
