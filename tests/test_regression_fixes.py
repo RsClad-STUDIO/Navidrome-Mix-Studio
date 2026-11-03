@@ -109,11 +109,28 @@ class RegressionFixTests(unittest.TestCase):
         self.assertEqual(AlbumFilter(level="High", target_size=50).max_per_album, 6)
 
         songs = [
-            Song(id=str(i), title=f"Song {i}", artist="Same Artist")
+            Song(id=str(i), title=f"Song {i}", artist=f"Artist {i // 30}")
             for i in range(60)
         ]
-        self.assertEqual(len(ArtistFilter(target_size=25).apply(songs)), 12)
-        self.assertEqual(len(ArtistFilter(target_size=50).apply(songs)), 25)
+        self.assertEqual(len(ArtistFilter(target_size=25).apply(songs)), 24)
+        self.assertEqual(len(ArtistFilter(target_size=50).apply(songs)), 50)
+
+    def test_single_album_and_single_artist_do_not_block_requested_size(self):
+        songs = [
+            Song(
+                id=str(i),
+                title=f"Unique Track {i}",
+                artist="Only Artist",
+                album="Only Album",
+            )
+            for i in range(80)
+        ]
+        self.assertEqual(len(AlbumFilter(target_size=50).apply(songs)), 50)
+        self.assertEqual(len(ArtistFilter(target_size=50).apply(songs)), 50)
+        self.assertEqual(
+            len(DiversityEngine(target_size=50).apply(songs)),
+            50,
+        )
 
     def test_artist_filter_does_not_drop_adjacent_same_artist_candidates(self):
         songs = [
@@ -153,18 +170,35 @@ class RegressionFixTests(unittest.TestCase):
         )
         filtered = DiversityEngine(filter_versions=True).apply(raw_candidates)
         initial = filtered[:requested]
+        self.assertEqual(len(initial), 6)
+
+        # A successful empty history must bootstrap zero-playcount tracks even
+        # when song-level lastPlayed metadata has populated days_map.
         final, refilled = RefillEngine.refill(
-            initial, scores, requested, "Daily Mix", {}, filter_config={}, history_available=True
+            initial,
+            scores,
+            requested,
+            "Daily Mix",
+            {"song-100": 30},
+            filter_config={},
+            history_available=True,
+            history_empty=True,
         )
 
-        self.assertEqual(len(initial), 6)
         self.assertEqual(len(final), requested)
         self.assertEqual(len(refilled), requested - len(initial))
         self.assertTrue(all(song.play_count == 0 for song in final))
 
         # An empty map caused by an unavailable history API must not bootstrap.
         failed_history_result, failed_history_refills = RefillEngine.refill(
-            initial, scores, requested, "Daily Mix", {}, filter_config={}, history_available=False
+            initial,
+            scores,
+            requested,
+            "Daily Mix",
+            {},
+            filter_config={},
+            history_available=False,
+            history_empty=False,
         )
         self.assertEqual(len(failed_history_result), len(initial))
         self.assertEqual(failed_history_refills, [])
