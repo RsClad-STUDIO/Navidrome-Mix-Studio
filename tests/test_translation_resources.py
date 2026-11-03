@@ -55,7 +55,7 @@ class TranslationResourceTests(unittest.TestCase):
         english = json.loads(
             (TRANSLATION_DIR / "en.json").read_text(encoding="utf-8")
         )
-        placeholder_pattern = re.compile(r"\\{[a-zA-Z_][a-zA-Z0-9_]*\\}")
+        placeholder_pattern = re.compile(r"\{[a-zA-Z_][a-zA-Z0-9_]*\}")
         for code in ("es", "fr", "de", "pt_BR"):
             locale = json.loads(
                 (TRANSLATION_DIR / f"{code}.json").read_text(encoding="utf-8")
