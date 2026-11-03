@@ -272,6 +272,7 @@ class NavidromeClient:
             ("getNowPlaying", {}, "nowPlaying", "entry"),
         )
         errors = []
+        successful_responses = 0
 
         for endpoint, params, response_key, entry_key in attempts:
             try:
@@ -283,6 +284,7 @@ class NavidromeClient:
                     errors.append(str(exc))
                 continue
 
+            successful_responses += 1
             entries = (response.get(response_key) or {}).get(entry_key, [])
             normalized = self._as_list(entries)
             if normalized:
@@ -290,6 +292,8 @@ class NavidromeClient:
 
         if errors:
             raise RuntimeError("Unable to retrieve playback history: " + "; ".join(errors))
+        if successful_responses == 0:
+            raise RuntimeError("No supported playback-history endpoint could be queried")
         return []
 
     def create_playlist(self, name: str, song_ids: List[str]) -> Optional[Dict[str, Any]]:
