@@ -10,12 +10,15 @@ class DiversityEngine:
 
     def __init__(self, **kwargs) -> None:
         self._version_filter = VersionFilter(kwargs)
+        target_size = kwargs.get("target_size", 25)
         self._album_filter = AlbumFilter(
             level=kwargs.get("album_level", "Normal"),
-            filter_versions=kwargs.get("filter_versions", True)
+            filter_versions=kwargs.get("filter_versions", True),
+            target_size=target_size,
         )
         self._artist_filter = ArtistFilter(
-            level=kwargs.get("artist_level", "Normal")
+            level=kwargs.get("artist_level", "Normal"),
+            target_size=target_size,
         )
         self._removed_ids: Dict[str, Set[str]] = {
             "version": set(),
