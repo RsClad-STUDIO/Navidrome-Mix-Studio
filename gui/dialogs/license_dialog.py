@@ -27,7 +27,7 @@ class LicenseDialog(QDialog):
             else:
                 self.text_edit.setPlainText(tr(TKey.ERROR_LICENSE_NOT_FOUND))
         except Exception as e:
-            self.text_edit.setPlainText(f"Error loading file: {e}")
+            self.text_edit.setPlainText(tr(TKey.ERROR_LICENSE_LOAD, error=e))
 
         layout.addWidget(self.text_edit)
         
