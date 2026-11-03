@@ -1,25 +1,37 @@
 from collections import Counter
-from typing import List
+from typing import List, Optional
 from models.song import Song
 
 
 class ArtistFilter:
     """同一アーティストの過剰な選出を制限するフィルタ。"""
 
-    def __init__(self, level: str = "Normal", target_size: int = 25) -> None:
+    def __init__(
+        self,
+        level: str = "Normal",
+        target_size: int = 25,
+        available_artist_count: Optional[int] = None,
+    ) -> None:
         # Preserve preset ratios; derive the actual artist cap from the requested output size.
         self.max_ratio = 0.6 if level == "Low" else (0.3 if level == "High" else 0.5)
         self.target_size = max(1, target_size)
+        self.available_artist_count = available_artist_count
 
     def apply(self, songs: List[Song]) -> List[Song]:
         if not songs:
             return []
 
-        # If only one artist is available, do not cap the playlist below its target.
-        available_artists = {song.artist or "Unknown Artist" for song in songs}
+        # Use the full candidate-pool count so a temporary single-artist
+        # selection does not prevent refill from adding another artist.
+        artist_count = self.available_artist_count
+        if artist_count is None:
+            artist_count = len({
+                song.artist or "Unknown Artist"
+                for song in songs
+            })
         max_per_artist = (
             self.target_size
-            if len(available_artists) <= 1
+            if artist_count <= 1
             else max(1, int(self.target_size * self.max_ratio))
         )
 
@@ -27,12 +39,11 @@ class ArtistFilter:
         result = []
 
         for s in songs:
-            if artist_counts[s.artist or "Unknown Artist"] >= max_per_artist:
+            artist_key = s.artist or "Unknown Artist"
+            if artist_counts[artist_key] >= max_per_artist:
                 continue
 
-            # Candidate filtering must not enforce playback adjacency:
-            # final playlist order is randomized later by MixGenerator.
             result.append(s)
-            artist_counts[s.artist or "Unknown Artist"] += 1
+            artist_counts[artist_key] += 1
 
         return result
