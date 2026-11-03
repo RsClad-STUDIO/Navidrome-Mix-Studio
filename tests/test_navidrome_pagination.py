@@ -38,14 +38,7 @@ class NavidromePaginationTests(unittest.TestCase):
             ["0", "500", "1000"],
         )
         self.assertTrue(
-<<<<<<< origin/main
-            all(
-                call.kwargs["raise_on_error"]
-                for call in self.client._request.call_args_list
-            )
-=======
             all(call.kwargs["raise_on_error"] for call in self.client._request.call_args_list)
->>>>>>> HEAD
         )
 
     def test_count_limits_total_results_across_pages(self):
