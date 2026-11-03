@@ -13,7 +13,11 @@ class DailyMixConfig:
     RECENT_DAYS_THRESHOLD = 30  # 現行DailyStrategyの動作を維持
     PAST_PLAY_COUNT_MIN = 15
     PAST_DAYS_THRESHOLD = 60
-    CORE_POOL_SIZE = 10
+    # Scale the seed pool with the requested output size (10 seeds for 25 tracks).
+    CORE_POOL_RATIO = 0.40
+    # Discovery samples the middle score band by library percentile, not fixed indexes.
+    DISCOVERY_START_RATIO = 0.005
+    DISCOVERY_END_RATIO = 0.10
 
 class FavoritesMixConfig:
     """Favorites Mix 用のパラメータ"""
