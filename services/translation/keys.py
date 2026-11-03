@@ -199,6 +199,16 @@ class TKey(StrEnum):
     # --- Sidebar ---
     MAIN_SIDEBAR_ABOUT = "main.sidebar.about"
 
+    # --- Additional translations used by current UI ---
+    COMMON_UNKNOWN_ARTIST = "common.unknown_artist"
+    COMMON_UNKNOWN_ALBUM = "common.unknown_album"
+    COMMON_UNKNOWN_YEAR = "common.unknown_year"
+    SETTINGS_ABOUT_TOOLTIP = "settings.about.tooltip"
+    SETTINGS_PROFILE_NEW_FORMAT = "settings.profile.new_format"
+    ABOUT_LABEL_PYTHON = "about.label.python"
+    ABOUT_LABEL_PYSIDE = "about.label.pyside"
+    ERROR_LICENSE_LOAD = "error.license_load"
+    PLAYLIST_MGR_NO_OLD_GENERATED = "playlist_manager.no_old_generated"
 
     # --- Dialogs ---
     # --- Restart Dialog ---
