@@ -49,7 +49,7 @@ class MixHistoryService:
             return False
 
     def get_song_occurrence_counts(self, preset: str, lookback: int = 5) -> Dict[str, int]:
-        """Section 6 の Rotation 用に過去の出現回数を集計"""
+        """Rotation計算用に、指定Mixの直近履歴から曲ごとの出現回数を集計する。"""
         history = self.load_history()
         preset_history = [item for item in history if item.get("preset") == preset][:lookback]
 
