@@ -15,21 +15,13 @@ from services.mix_history_service import MixHistoryService
 
 
 class MixGenerator:
-<<<<<<< origin/main
-=======
     HARD_DURATION_LIMIT = 10800
 
->>>>>>> HEAD
     def __init__(self, **kwargs) -> None:
         self._logger = logging.getLogger("MixGenerator")
         self._library_service = kwargs.get("library_service")
         self._history_service = kwargs.get("history_service")
         self._favorites_service = kwargs.get("favorites_service")
-<<<<<<< origin/main
-        
-        # Apply the configured blacklist before scoring candidates.
-=======
->>>>>>> HEAD
         self._blacklist_service = kwargs.get("blacklist_service")
         self._mix_history_service = kwargs.get("mix_history_service") or MixHistoryService()
         self._pipeline = CandidatePipeline(
@@ -38,11 +30,6 @@ class MixGenerator:
         self._refill_engine = RefillEngine()
         self._stats_collector = StatisticsCollector()
         self._strategy_factory = StrategyFactory()
-<<<<<<< origin/main
-        
-        # Last generation results exposed to the UI.
-=======
->>>>>>> HEAD
         self._last_stats = None
         self._last_scored_list = []
 
@@ -60,18 +47,9 @@ class MixGenerator:
 
         if self._favorites_service:
             self._favorites_service.sync_favorites()
-<<<<<<< origin/main
-            
-        # 1. Fetch the full library, or the matching subset when a query is provided.
-        query = str(kwargs.get("query") or "").strip()
-        all_songs_raw = self._library_service.fetch_songs(query=query)
-        
-        # Remove blacklisted tracks before building the recommendation pool.
-=======
 
         raw_query = str(kwargs.get("query") or "").strip()
         all_songs_raw = self._library_service.fetch_songs(query=raw_query)
->>>>>>> HEAD
         if self._blacklist_service:
             all_songs = [
                 song for song in all_songs_raw
@@ -101,28 +79,6 @@ class MixGenerator:
             adaptive_mode=adaptive_mode,
         )
 
-<<<<<<< origin/main
-        # 3. Strategy Execution (Get 2x buffer)
-        context = {
-            "days_since_last_play": days_map,
-            "suppress_instrumental": kwargs.get("suppress_instrumental", True),
-            "suppress_live": kwargs.get("suppress_live", False),
-            "suppress_remix": kwargs.get("suppress_remix", False),
-            "suppress_demo": kwargs.get("suppress_demo", False),
-            "suppress_acoustic": kwargs.get("suppress_acoustic", False),
-        }
-        strategy = self._strategy_factory.create(preset_name)
-        raw_candidates = strategy.generate(scored_list, days_map, limit * 2, clean_pool, context)
-
-        # 4. Filter Execution
-        div_engine = DiversityEngine(
-            suppress_instrumental=context["suppress_instrumental"],
-            suppress_live=context["suppress_live"],
-            suppress_remix=context["suppress_remix"],
-            suppress_demo=context["suppress_demo"],
-            suppress_acoustic=context["suppress_acoustic"],
-            filter_versions=True,
-=======
         # 検索欄が空なら従来どおり全候補を使用します。
         # 入力がある場合は曲名・アーティスト名・アルバム名の部分一致で候補を限定します。
         query = " ".join(raw_query.casefold().split())
@@ -183,7 +139,6 @@ class MixGenerator:
             target_size=limit,
             available_album_count=available_album_count,
             available_artist_count=available_artist_count,
->>>>>>> HEAD
         )
         unique_candidates = self._unique_by_id(raw_candidates)
         all_filtered = div_engine.apply(unique_candidates)
@@ -200,15 +155,8 @@ class MixGenerator:
             history_empty=context["history_empty"],
         )
 
-<<<<<<< origin/main
-        # 7. Finalize playlist and collect statistics
         random.shuffle(final_songs)
         gen_time = int((time.perf_counter() - start_time) * 1000)
-
-=======
-        random.shuffle(final_songs)
-        gen_time = int((time.perf_counter() - start_time) * 1000)
->>>>>>> HEAD
         stats_data = self._stats_collector.collect(
             preset_name, limit, all_songs, clean_pool, scored_list,
             final_songs, strat_songs, refill_songs, days_map,
@@ -217,12 +165,7 @@ class MixGenerator:
 
         self._last_stats = stats_data
         self._last_scored_list = scored_list
-<<<<<<< origin/main
-
-        self._logger.info("\\n%s", ReportFormatter.format(stats_data))
-=======
         self._logger.info("\n%s", ReportFormatter.format(stats_data))
->>>>>>> HEAD
         self._save_to_history(preset_name, now, final_songs)
         return final_songs
 
