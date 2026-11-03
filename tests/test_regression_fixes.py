@@ -132,6 +132,23 @@ class RegressionFixTests(unittest.TestCase):
             50,
         )
 
+    def test_album_cap_rejection_does_not_reserve_duplicate_title(self):
+        songs = [
+            Song(id="album-a-1", title="Anchor", artist="Artist A", album="Album A"),
+            Song(id="album-a-2", title="Shared Title", artist="Artist A", album="Album A"),
+            Song(id="album-b-1", title="Shared Title", artist="Artist B", album="Album B"),
+        ]
+
+        filtered = AlbumFilter(
+            target_size=4,
+            available_album_count=2,
+        ).apply(songs)
+
+        self.assertEqual(
+            [song.id for song in filtered],
+            ["album-a-1", "album-b-1"],
+        )
+
     def test_artist_filter_does_not_drop_adjacent_same_artist_candidates(self):
         songs = [
             Song(id=str(i), title=f"Song {i}", artist="Same Artist")
