@@ -715,6 +715,70 @@ class RegressionFixTests(unittest.TestCase):
             ))
             self.assertEqual(path.read_text(encoding="utf-8"), original)
 
+    def test_mix_history_skips_same_preset_and_same_songs(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = MixHistoryService(
+                storage_path=str(Path(temp_dir) / "mix_history.json")
+            )
+            songs = [
+                {"id": "song-1", "title": "One"},
+                {"id": "song-2", "title": "Two"},
+            ]
+            self.assertTrue(service.save_mix(
+                preset="daily_mix",
+                timestamp="2026-11-03T12:00:00",
+                songs=songs,
+            ))
+            self.assertFalse(service.save_mix(
+                preset="daily_mix",
+                timestamp="2026-11-03T12:05:00",
+                songs=songs,
+            ))
+            self.assertTrue(service.last_save_was_duplicate)
+            self.assertEqual(len(service.load_history()), 1)
+
+    def test_mix_history_duplicate_detection_ignores_song_order(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = MixHistoryService(
+                storage_path=str(Path(temp_dir) / "mix_history.json")
+            )
+            self.assertTrue(service.save_mix(
+                preset="daily_mix",
+                timestamp="2026-11-03T12:00:00",
+                songs=[{"id": "song-1"}, {"id": "song-2"}],
+            ))
+            self.assertFalse(service.save_mix(
+                preset="daily_mix",
+                timestamp="2026-11-03T12:05:00",
+                songs=[{"id": "song-2"}, {"id": "song-1"}],
+            ))
+            self.assertTrue(service.last_save_was_duplicate)
+            self.assertEqual(len(service.load_history()), 1)
+
+    def test_mix_history_allows_different_preset_or_song_set(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = MixHistoryService(
+                storage_path=str(Path(temp_dir) / "mix_history.json")
+            )
+            original_songs = [{"id": "song-1"}, {"id": "song-2"}]
+            self.assertTrue(service.save_mix(
+                preset="daily_mix",
+                timestamp="2026-11-03T12:00:00",
+                songs=original_songs,
+            ))
+            self.assertTrue(service.save_mix(
+                preset="favorites_mix",
+                timestamp="2026-11-03T12:05:00",
+                songs=original_songs,
+            ))
+            self.assertTrue(service.save_mix(
+                preset="daily_mix",
+                timestamp="2026-11-03T12:10:00",
+                songs=[{"id": "song-1"}, {"id": "song-3"}],
+            ))
+            self.assertEqual(len(service.load_history()), 3)
+            self.assertFalse(service.last_save_was_duplicate)
+
     def test_mix_history_storage_is_server_scoped(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             base = str(Path(temp_dir) / "mix_history.json")
