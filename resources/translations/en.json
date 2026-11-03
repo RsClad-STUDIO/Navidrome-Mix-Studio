@@ -27,6 +27,7 @@
   "mix.checkbox.demo": "Demo",
   "mix.checkbox.acoustic": "Acoustic",
   "mix.playlist.title_suffix": "Mix",
+  "mix.history.duplicate_notice": "This mix matches an existing generated mix. It was not saved to history again.",
   "mix.strategy.daily.name": "Daily Mix",
   "mix.strategy.daily.desc": "A balanced mix of your favorites, familiar tracks, and new discoveries.",
   "mix.strategy.favorites.name": "Favorites Mix",
