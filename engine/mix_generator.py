@@ -32,6 +32,7 @@ class MixGenerator:
         self._strategy_factory = StrategyFactory()
         self._last_stats = None
         self._last_scored_list = []
+        self._last_history_duplicate = False
 
     def generate_mix(self, preset_name: str, limit: int = 25, **kwargs) -> List[Song]:
         start_time = time.perf_counter()
@@ -183,6 +184,16 @@ class MixGenerator:
             {"id": song.id, "title": song.title, "artist": song.artist}
             for song in songs
         ]
-        self._mix_history_service.save_mix(
+        saved = self._mix_history_service.save_mix(
             preset=preset_key, timestamp=now.isoformat(), songs=song_dicts
         )
+        self._last_history_duplicate = bool(
+            not saved
+            and getattr(self._mix_history_service, "last_save_was_duplicate", False)
+        )
+        if self._last_history_duplicate:
+            self._logger.info("Duplicate generated Mix was not added to history.")
+
+    def was_last_mix_history_duplicate(self) -> bool:
+        """直近の生成結果が既存履歴と重複していたかを返す。"""
+        return self._last_history_duplicate
