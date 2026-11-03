@@ -6,9 +6,10 @@ from utils.title_normalizer import TitleNormalizer
 class AlbumFilter:
     """同一アルバムからの重複選曲を制限するフィルタ。"""
 
-    def __init__(self, level: str = "Normal", filter_versions: bool = True) -> None:
-        # 上限を 4 -> 6 へ緩和。シリーズものやライブアルバムの楽曲が残りやすくします。
-        self.max_per_album = 8 if level == "Low" else (3 if level == "High" else 6)
+    def __init__(self, level: str = "Normal", filter_versions: bool = True, target_size: int = 25) -> None:
+        # Keep the established 25-track behavior, but scale the cap with the requested mix size.
+        ratio = 0.32 if level == "Low" else (0.12 if level == "High" else 0.24)
+        self.max_per_album = max(1, int(max(1, target_size) * ratio))
         self.filter_versions = filter_versions
 
     def apply(self, songs: List[Song]) -> List[Song]:
