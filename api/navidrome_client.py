@@ -280,7 +280,7 @@ class NavidromeClient:
             except RuntimeError as exc:
                 # Unsupported endpoints may be skipped; other failures mean history
                 # availability cannot be established.
-                if "404" not in str(exc):
+                if "404" not in str(exc) and "endpoint not found" not in str(exc).lower():
                     errors.append(str(exc))
                 continue
 
