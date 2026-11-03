@@ -63,6 +63,10 @@ class MixGenerator:
 
         history = self._history_service.fetch_history(size=2000)
         days_map = self._history_service.prepare_context(history, all_songs, now)
+        history_fetch_succeeded = bool(
+            getattr(self._history_service, "last_fetch_succeeded", False)
+        )
+        history_is_empty = history_fetch_succeeded and not history
 
         adaptive_mode = bool(kwargs.get("adaptive_mode", True))
         clean_pool, scored_list, rotation_history = self._pipeline.execute(
@@ -108,7 +112,8 @@ class MixGenerator:
         context = {
             "days_since_last_play": days_map,
             "history_loaded": len(history),
-            "history_available": bool(getattr(self._history_service, "last_fetch_succeeded", False)),
+            "history_available": history_fetch_succeeded,
+            "history_empty": history_is_empty,
             "requested_limit": limit,
             "favorite_ratio": favorite_ratio,
             "history_coverage": history_coverage,
@@ -134,6 +139,7 @@ class MixGenerator:
             days_map,
             filter_config=filter_config,
             history_available=context["history_available"],
+            history_empty=context["history_empty"],
         )
 
         random.shuffle(final_songs)
