@@ -10,13 +10,16 @@ class HistoryService:
     def __init__(self, client, logger: Optional[logging.Logger] = None) -> None:
         self._client = client
         self._logger = logger or logging.getLogger(__name__)
+        self.last_fetch_succeeded = False
 
     def fetch_history(self, size: int = 2000) -> List[HistoryEntry]:
         """APIから生の履歴データを取得します。"""
         try:
             raw = self._client.get_history(size=size)
+            self.last_fetch_succeeded = True
             return [HistoryEntry.from_dict(h) for h in raw]
         except Exception as e:
+            self.last_fetch_succeeded = False
             self._logger.error(f"Failed to fetch history: {e}")
             return []
 
