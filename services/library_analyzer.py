@@ -28,11 +28,37 @@ class LibraryAnalyzer:
 
     def analyze_library(self, songs: List[Song], force_refresh: bool = False) -> LibraryProfile:
         """ライブラリ全体を解析し、キャッシュがあれば再利用してプロファイルを生成します。"""
+        signature_source = "\n".join(
+            "\0".join(
+                (
+                    song.id,
+                    song.title,
+                    song.artist,
+                    song.album or "",
+                    str(song.year or ""),
+                    str(bool(getattr(song, "starred", False))),
+                )
+            )
+            for song in sorted(songs, key=lambda item: item.id)
+        )
+        library_signature = hashlib.sha256(
+            signature_source.encode("utf-8")
+        ).hexdigest()
+
         if not force_refresh and self._cache_manager:
+<<<<<<< origin/main
+            cached_data = self._cache_manager.get(self.CACHE_KEY)
+            if (
+                isinstance(cached_data, dict)
+                and cached_data.get("signature") == library_signature
+                and isinstance(cached_data.get("profile"), dict)
+            ):
+=======
             cached_data = self._cache_manager.get(self._cache_key)
             if cached_data and isinstance(cached_data, dict):
+>>>>>>> HEAD
                 self._logger.info("Retrieved LibraryProfile from cache.")
-                return LibraryProfile.from_dict(cached_data)
+                return LibraryProfile.from_dict(cached_data["profile"])
 
         self._logger.info(f"Analyzing full library ({len(songs)} songs)...")
         total_songs = len(songs)
@@ -101,7 +127,14 @@ class LibraryAnalyzer:
         )
 
         if self._cache_manager:
+<<<<<<< origin/main
+            self._cache_manager.set(
+                self.CACHE_KEY,
+                {"signature": library_signature, "profile": profile.to_dict()},
+            )
+=======
             self._cache_manager.set(self._cache_key, profile.to_dict())
+>>>>>>> HEAD
 
         self._logger.info("Library analysis completed.")
         return profile

@@ -2,27 +2,37 @@ from models.song import Song
 from utils.title_normalizer import TitleNormalizer
 from engine.strategies.strategy_config import GlobalConfig
 
+
 class PurgeEngine:
-    """楽曲が除外対象（長尺・ライブ・インスト等）であるかを判定するエンジン。"""
+    """楽曲が除外対象（長尺・ライブ・各種バージョン）であるかを判定する。"""
 
     @staticmethod
     def should_purge(song: Song, config: dict) -> bool:
-        # 1. 物理的な絶対上限 (GlobalConfig参照)
+        # Always enforce the absolute duration ceiling.
         if song.duration > GlobalConfig.HARD_DURATION_LIMIT:
             return True
 
-        # 2. タイトルとアルバム名を結合して判定
-        combined_text = f"{song.title} {song.album if song.album else ''}"
-        v_info = TitleNormalizer.detect_versions(combined_text)
+        combined_text = f"{song.title} {song.album or ''}"
+        version_info = TitleNormalizer.detect_versions(combined_text)
 
+<<<<<<< origin/main
+        if config.get("suppress_live", False):
+            if version_info["live"] or song.duration > GlobalConfig.LIVE_PURGE_DURATION:
+=======
         # 3. ライブ・長尺除外
         if config.get("suppress_live", False):
             if v_info["live"] or song.duration > GlobalConfig.LIVE_PURGE_DURATION:
+>>>>>>> HEAD
                 return True
 
-        # 4. インスト除外
-        if config.get("suppress_instrumental", True):
-            if v_info["instrumental"]:
+        exclusions = (
+            ("suppress_instrumental", "instrumental", True),
+            ("suppress_remix", "remix", False),
+            ("suppress_demo", "demo", False),
+            ("suppress_acoustic", "acoustic", False),
+        )
+        for setting, version, default in exclusions:
+            if config.get(setting, default) and version_info[version]:
                 return True
 
         return False

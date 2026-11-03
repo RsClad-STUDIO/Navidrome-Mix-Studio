@@ -37,8 +37,14 @@ class DiversityEngine:
             if self._version_filter.is_suppressed(song):
                 self._removed_ids["version"].add(song.id)
             else:
+<<<<<<< origin/main
+                step1.append(s)
+        
+        # 2. Album Filter
+=======
                 step1.append(song)
 
+>>>>>>> HEAD
         step2 = self._album_filter.apply(step1)
         for song in step1:
             if song not in step2:
@@ -57,6 +63,18 @@ class DiversityEngine:
             f"Album Filter Removed     : {len(self._removed_ids['album'])}\n"
             f"Artist Filter Removed    : {len(self._removed_ids['artist'])}"
         )
+
+    @staticmethod
+    def normalize_title(title: str) -> str:
+        """Return a normalized title for duplicate-version comparisons."""
+        from utils.title_normalizer import TitleNormalizer
+        return TitleNormalizer.normalize(title)
+
+    @staticmethod
+    def is_version_variant(song: Song) -> bool:
+        """Return whether a song title contains a recognized version marker."""
+        from utils.title_normalizer import TitleNormalizer
+        return any(TitleNormalizer.detect_versions(song.title).values())
 
     @staticmethod
     def normalize_title(title: str) -> str:

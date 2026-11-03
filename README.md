@@ -23,6 +23,11 @@ Designed for self-hosted music enthusiasts, Navidrome Mix Studio brings a modern
 
 ## Screenshots
 
+<<<<<<< origin/main
+
+
+=======
+>>>>>>> HEAD
 
 | Main Window                                       | Statistics                                        |
 | ------------------------------------------------- | ------------------------------------------------- |
@@ -152,7 +157,7 @@ Navidrome Mix Studio is designed to run on modern Windows environments and requi
 | Component        | Requirement                        |
 | ---------------- | ---------------------------------- |
 | Operating System | Windows 10 / Windows 11 (64-bit)   |
-| Python           | 3.11 or later*(source build only)* |
+| Python           | 3.11 or later (source build only) |
 | Framework        | PySide6                            |
 | Music Server     | Navidrome                          |
 | API              | Subsonic API                       |
@@ -430,7 +435,7 @@ Design goals include:
 
 ## Internationalization
 
-The application includes a fully integrated localization system.
+The application includes a centralized localization system for its user interface.
 
 Key features include:
 
@@ -439,7 +444,7 @@ Key features include:
 - Centralized translation management
 - Easy addition of new languages
 
-Keeping all user-facing text outside the source code simplifies maintenance and future localization.
+Centralizing interface text in translation files simplifies maintenance and future localization.
 
 ---
 

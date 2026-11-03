@@ -92,10 +92,19 @@ class ReportFormatter:
                 label = "Nostalgic Picks"
             else:
                 label = display_map.get(k, k.replace("_", " ").capitalize())
+<<<<<<< origin/main
+            percentage = (v / data.final_total * 100) if data.final_total else 0
+            res.append(f"{label:<20} : {int(percentage):>3}%")
+        
+        if data.refill_total > 0:
+            refill_percentage = (data.refill_total / data.final_total * 100) if data.final_total else 0
+            res.append(f"{'Refill System':<20} : {int(refill_percentage):>3}%")
+=======
             res.append(f"{label:<20} : {int(v / data.final_total * 100) if data.final_total > 0 else 0:>3}%")
         
         if data.refill_total > 0:
             res.append(f"{'Refill System':<20} : {int(data.refill_total / data.final_total * 100) if data.final_total > 0 else 0:>3}%")
+>>>>>>> HEAD
 
         res.append("--------------------------------------------------")
         res.append(f"Result: {data.final_total} songs generated successfully.")

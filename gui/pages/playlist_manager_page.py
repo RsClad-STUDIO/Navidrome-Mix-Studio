@@ -1,4 +1,4 @@
-"""Phase 13.3: Playlist Manager - Optimized for Name visibility and simplified Info."""
+"""プレイリストの一覧表示・詳細確認・管理を行う画面。"""
 
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, List, Optional
