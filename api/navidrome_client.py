@@ -38,7 +38,7 @@ class NavidromeClient:
         return value if isinstance(value, list) else [value]
 
     def test_connection(self) -> ConnectionResult:
-        """Phase 11: 接続テストを実施する。"""
+        """Navidrome APIへの接続をテストする。"""
         if not self.server_url:
             return ConnectionResult(success=False, error_message="Server URL is empty")
 
