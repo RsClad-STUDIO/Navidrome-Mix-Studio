@@ -144,7 +144,12 @@ class RegressionFixTests(unittest.TestCase):
         songs = []
         scores = []
         for index in range(10001):
-            album = "Dominant Album" if index < 100 else f"Album {index}"
+            if index < 75:
+                album = "Dominant Album"
+            elif index < 100:
+                album = "Secondary Album"
+            else:
+                album = f"Album {index}"
             song = Song(
                 id=f"song-{index}",
                 title=f"Track {index}",
@@ -170,7 +175,7 @@ class RegressionFixTests(unittest.TestCase):
         )
         filtered = DiversityEngine(filter_versions=True).apply(raw_candidates)
         initial = filtered[:requested]
-        self.assertEqual(len(initial), 6)
+        self.assertEqual(len(initial), 12)
 
         # A successful empty history must bootstrap zero-playcount tracks even
         # when song-level lastPlayed metadata has populated days_map.
