@@ -95,9 +95,6 @@ class ReportFormatter:
             res.append(f"{label:<20} : {int(v / data.final_total * 100) if data.final_total > 0 else 0:>3}%")
         
         if data.refill_total > 0:
-            res.append(f"{'Refill System':<20} : {int(data.refill_total / data.final_total * 100) if data.final_total > 0 else 0:>3}%")
-
-        if data.refill_total > 0:
             refill_percentage = (
                 data.refill_total / data.final_total * 100
                 if data.final_total > 0 else 0
