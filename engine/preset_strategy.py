@@ -84,7 +84,7 @@ class PresetStrategy(ABC):
                 (random_val * weights.weight_random)
             )
 
-            # Rotation計算 (Phase 10: 追い出しロジック)
+            # Rotationペナルティを計算する。
             accum_weight = 0.0
             if has_history and s.id in decay_map:
                 accum_weight = decay_map.get(s.id, {}).get("accumulated_weight", 0.0)
@@ -132,7 +132,7 @@ class PresetStrategy(ABC):
         final_list = list(selected)
         random.shuffle(final_list)
 
-        # メトリクス生成 (略)
+        # 選出結果のRotationメトリクスを生成する。
         in_songs = [f"{s.title} - {s.artist}" for s in final_list if s.id not in prev_mix_ids]
         metrics = {
             "rotation_in_count": len(in_songs),
