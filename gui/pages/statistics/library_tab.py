@@ -81,7 +81,7 @@ class LibraryTab(QWidget):
             top = sorted(profile.artist_distribution.items(), key=lambda x: x[1], reverse=True)[:15]
             self.table.setRowCount(len(top))
             for i, (art, ratio) in enumerate(top):
-                self.table.setItem(i, 0, QTableWidgetItem(art))
+                self.table.setItem(i, 0, QTableWidgetItem(tr(TKey.COMMON_UNKNOWN_ARTIST) if art == "Unknown Artist" else art))
                 item = QTableWidgetItem(f"{ratio:.2f} %")
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.table.setItem(i, 1, item)
