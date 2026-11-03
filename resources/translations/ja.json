@@ -27,6 +27,7 @@
   "mix.checkbox.demo": "デモ",
   "mix.checkbox.acoustic": "アコースティック",
   "mix.playlist.title_suffix": "ミックス",
+  "mix.history.duplicate_notice": "今回のミックスは既存の生成履歴と同じ内容です。履歴への重複保存は行いませんでした。",
   "mix.strategy.daily.name": "デイリーミックス",
   "mix.strategy.daily.desc": "お気に入りと新しい発見をバランスよく組み合わせたミックスです。",
   "mix.strategy.favorites.name": "お気に入り",
