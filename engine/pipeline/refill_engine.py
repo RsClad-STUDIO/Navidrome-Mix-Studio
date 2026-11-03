@@ -1,4 +1,5 @@
 from typing import Dict, List, Tuple
+import random
 
 from models.song import Song
 from models.music_score import MusicScore
@@ -20,6 +21,7 @@ class RefillEngine:
         days_map: dict,
         filter_config: Dict = None,
         history_available: bool = False,
+        history_empty: bool = False,
     ) -> Tuple[List[Song], List[Song]]:
         final_list = list(current_songs[:limit])
         if len(final_list) >= limit:
@@ -38,8 +40,11 @@ class RefillEngine:
         existing_ids = {song.id for song in final_list}
         refilled_list: List[Song] = []
 
-        # CandidatePipeline ranks scores descending; make refill order explicit too.
-        ranked_scores = sorted(scored_list, key=lambda item: item.total_score, reverse=True)
+        # Shuffle before the stable score sort: scores stay ranked, while ties
+        # no longer inherit the Navidrome API's album/group ordering.
+        ranked_scores = list(scored_list)
+        random.shuffle(ranked_scores)
+        ranked_scores.sort(key=lambda item: item.total_score, reverse=True)
 
         for music_score in ranked_scores:
             song = music_score.song
@@ -58,11 +63,12 @@ class RefillEngine:
                     eligible = music_score.play_count >= ForgottenMixConfig.PLAY_COUNT_MIN and days_unplayed > ForgottenMixConfig.NON_FAVORITE_DAYS_LIMIT
                     source_tag = "recent"
             else:
-                # A library with no playback history must still be able to
-                # bootstrap a Daily Mix from never-played tracks. Once history
-                # exists, retain the normal non-favorite/play-count rule.
+                # Bootstrap never-played tracks only when the history endpoint
+                # succeeded and explicitly returned an empty history. Song-level
+                # lastPlayed metadata must not block this zero-history fallback.
                 eligible = not song.starred and (
-                    music_score.play_count >= 1 or (history_available and not days_map)
+                    music_score.play_count >= 1
+                    or (history_available and history_empty and music_score.play_count == 0)
                 )
                 source_tag = "discovery"
 
