@@ -1,534 +1,266 @@
 # Navidrome Mix Studio
 
-> Create intelligent Spotify/Plexamp-style playlists for your Navidrome music library.
+> Create intelligent, personalized playlists from your own Navidrome music library.
 
-Navidrome Mix Studio is a desktop companion application for Navidrome that generates intelligent playlists from your personal music library.
+Navidrome Mix Studio is a Windows desktop companion for [Navidrome](https://www.navidrome.org/). It analyzes your music library, favorites, listening history, and track metadata to generate balanced playlists without relying on simple shuffle playback.
 
-Instead of relying on simple shuffle playback, the application analyzes your listening history, favorites, and library metadata to create playlists that feel balanced, natural, and personalized.
-
-Designed for self-hosted music enthusiasts, Navidrome Mix Studio brings a modern music discovery experience to your own collection while keeping your library completely under your control.
+The application connects to Navidrome through its Subsonic-compatible API. Your music files remain on your server; Mix Studio retrieves the information needed to build recommendations and saves generated playlists back to Navidrome.
 
 ---
 
 ## Highlights
 
-- Intelligent playlist generation based on listening history
-- Four recommendation-focused mix types
-- Built-in Playlist Manager
-- Library statistics and analysis
-- English and Japanese language support
-- Native Qt desktop interface with Light and Dark Mode support
+- Four recommendation-based mix types
+- Full-library retrieval with paginated API requests
+- Recommendations informed by listening history, favorites, and library metadata
+- Mix generation that can also work when listening history is empty
+- Artist, album, and version diversity controls
+- Playlist creation, update, browsing, and cleanup
+- Library statistics and metadata analysis
+- Blocklist support
+- Server- and user-specific cache and mix-history separation
+- English and Japanese interface
+- Qt desktop interface with Light and Dark Mode support
 
 ---
 
 ## Screenshots
 
+| Main Window | Statistics |
+| --- | --- |
+| ![Main Window](images/README/1785461664659.png) | ![Statistics](images/README/1785461722103.png) |
 
-| Main Window                                       | Statistics                                        |
-| ------------------------------------------------- | ------------------------------------------------- |
-| ![1785461664659](images/README/1785461664659.png) | ![1785461722103](images/README/1785461722103.png) |
+| Playlist Manager | Settings |
+| --- | --- |
+| ![Playlist Manager](images/README/1785461736321.png) | ![Settings](images/README/1785461759837.png) |
 
-
-| Playlist Manager                                  | Settings                                          |
-| ------------------------------------------------- | ------------------------------------------------- |
-| ![1785461736321](images/README/1785461736321.png) | ![1785461759837](images/README/1785461759837.png) |
-
-
-| Blocklist                                         | About                                             |
-| ------------------------------------------------- | ------------------------------------------------- |
-| ![1785461769847](images/README/1785461769847.png) | ![1785461776098](images/README/1785461776098.png) |
+| Blocklist | About |
+| --- | --- |
+| ![Blocklist](images/README/1785461769847.png) | ![About](images/README/1785461776098.png) |
 
 ---
 
-# Overview
+## Mix Types
 
-Navidrome Mix Studio is designed to help you rediscover and organize your music library.
+| Mix | Description |
+| --- | --- |
+| **Daily Mix** | A balanced selection for everyday listening. |
+| **Favorites Mix** | Builds around favorite tracks while maintaining variety. |
+| **Discovery Mix** | Helps rediscover tracks you rarely play. |
+| **Forgotten Favorites** | Brings older, long-unplayed favorites back into rotation. |
 
-By connecting directly to a Navidrome server through the Subsonic API, the application analyzes your listening habits and generates playlists tailored to your preferences.
-
-Unlike traditional shuffle playback, every playlist is created using multiple recommendation strategies that improve variety while keeping recommendations relevant.
-
-The application currently provides four mix types:
-
-
-| Mix                     | Description                                                |
-| ----------------------- | ---------------------------------------------------------- |
-| **Daily Mix**           | Balanced playlists for everyday listening.                 |
-| **Favorites Mix**       | Focuses on your favorite tracks while maintaining variety. |
-| **Discovery Mix**       | Recommends overlooked songs from your library.             |
-| **Forgotten Favorites** | Brings long-unplayed favorite tracks back into rotation.   |
-
-Beyond playlist generation, the application also provides:
-
-- Playlist management
-- Library statistics
-- Blocklist management
-- Multi-language support
-- Native desktop experience
-
-Together, these features make Navidrome Mix Studio a complete companion application for Navidrome users.
+The recommendation pipeline combines candidate selection, filtering, scoring, and diversity controls. The aim is to keep recommendations relevant while avoiding a playlist dominated by the same artist, album, or version.
 
 ---
 
-# Features
+## Features
 
-## Intelligent Mix Generation
+### Intelligent Mix Generation
 
-Generate playlists that match different listening styles instead of relying on random playback.
+Mixes are generated using information available from your Navidrome account, including:
 
+- Listening history
+- Favorite tracks
+- Track, artist, and album metadata
+- Last-played information where available
 
-| Mix Type                | Purpose                                            |
-| ----------------------- | -------------------------------------------------- |
-| **Daily Mix**           | Everyday listening based on your listening habits. |
-| **Favorites Mix**       | Enjoy your favorite songs with improved variety.   |
-| **Discovery Mix**       | Rediscover songs you rarely play.                  |
-| **Forgotten Favorites** | Bring older favorites back into your rotation.     |
+An empty listening history is treated differently from a failed history request. This allows the generator to handle accounts with no recorded plays without interpreting an API failure as a valid empty history.
 
----
+### Full Library Retrieval
 
-## Playlist Management
+The application retrieves the music library through paginated Subsonic API requests and normalizes API responses that may represent a single item or a list. This avoids relying on a single limited response when working with larger libraries.
 
-Manage generated playlists without leaving the application.
+### Playlist Manager
 
-Features include:
+Manage playlists from the desktop application:
 
-- Browse playlists
-- View playlist contents
+- Browse playlists and view their tracks
 - Search playlists
 - Delete playlists
-- Cleanup outdated generated playlists
+- Clean up generated playlists
 
----
+When saving a Mix, repeated clicks are guarded against. In auto-update mode, an existing playlist with the same name is updated instead of creating another copy. If an update fails, the application does not silently create a duplicate playlist.
 
-## Library Analysis
+### Library Analysis
 
-Understand your music collection through built-in statistics.
+Review information about your collection, including library overview, artist and album distribution, favorites, metadata, and recommendation statistics.
 
-Available information includes:
+### Blocklist
 
-- Library overview
-- Artist and album distribution
-- Favorite statistics
-- Metadata analysis
-- Recommendation confidence
+Exclude selected tracks from future recommendation results. The blocklist is applied across the recommendation types.
 
----
+### Cache and Mix History Isolation
 
-## Blocklist
+Cached library data, favorites, and Mix history are separated by Navidrome server and user context. This prevents data from one account or server from being reused as though it belonged to another.
 
-Exclude unwanted songs from future playlist generation.
+Mix-history duplicate detection considers the preset and the set of track IDs. A different preset or a different track selection can be recorded as a separate Mix.
 
-The blocklist is shared across all recommendation types, allowing playlists to better reflect your personal preferences.
+### Automatic Generation
 
----
+The application includes a scheduler with startup, daily, and interval modes. It can generate a configured Mix and save it to Navidrome automatically. Scheduler behavior may depend on application runtime and local configuration; review the settings before enabling it.
 
-## Multi-language Support
+### Languages and Appearance
 
-The user interface currently supports:
+The interface supports:
 
 - English
 - Japanese
+- Light and Dark Mode
 
-Language changes are applied immediately without restarting the application.
-
----
-
-## Native Desktop Interface
-
-Built with Qt (PySide6), the application provides a responsive desktop experience using native Qt widgets.
-
-Key characteristics include:
-
-- Light and Dark Mode support
-- Responsive layouts
-- Native desktop interface
-- Consistent visual design
-
-# Requirements
-
-Navidrome Mix Studio is designed to run on modern Windows environments and requires access to a Navidrome server.
-
-
-| Component        | Requirement                        |
-| ---------------- | ---------------------------------- |
-| Operating System | Windows 10 / Windows 11 (64-bit)   |
-| Python           | 3.11 or later*(source build only)* |
-| Framework        | PySide6                            |
-| Music Server     | Navidrome                          |
-| API              | Subsonic API                       |
-| Network          | Access to the Navidrome server     |
-
-### Before You Begin
-
-Prepare the following information before connecting:
-
-- Navidrome Server URL
-- Username
-- Password
+Language changes are applied within the application.
 
 ---
 
-# Installation
+## Requirements
 
-Navidrome Mix Studio can be used either as a pre-built Windows application or by running the source code.
+| Component | Requirement |
+| --- | --- |
+| Operating System | Windows 10 / Windows 11 (64-bit) |
+| Python | 3.11 or later (source run only) |
+| GUI Framework | PySide6 |
+| HTTP Client | requests |
+| Music Server | Navidrome |
+| API | Subsonic-compatible API |
+| Network | Connectivity to your Navidrome server |
 
-## Option 1 — Download a Release (Recommended)
+You will need the Navidrome server URL, username, and password for the account whose listening history and favorites should inform recommendations.
 
-1. Download the latest release from the GitHub **Releases** page.
-2. Extract the downloaded archive.
-3. Launch the executable.
-
-No Python installation is required when using the packaged release.
+**Account selection matters:** use the same Navidrome account you normally use to listen to music. If you use a different account, its listening history and favorites may produce different recommendations.
 
 ---
 
-## Option 2 — Build from Source
+## Installation
 
-Clone the repository.
+### Option 1 — Download a Release
 
-```bash
+1. Open the project's [GitHub Releases](https://github.com/RsClad-STUDIO/Navidrome-Mix-Studio/releases) page.
+2. Download the latest available Windows release.
+3. Extract the archive.
+4. Launch the included executable.
+
+A packaged release does not require a separate Python installation.
+
+### Option 2 — Run from Source
+
+Clone the repository:
+
+```powershell
 git clone https://github.com/RsClad-STUDIO/Navidrome-Mix-Studio.git
 cd Navidrome-Mix-Studio
 ```
 
-Install the required packages.
+Create and activate a virtual environment:
 
-```bash
-pip install -r requirements.txt
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-Run the application.
+Install dependencies:
 
-```bash
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Start the application:
+
+```powershell
 python main.py
 ```
 
----
-
-## Verify the Installation
-
-If the application starts successfully, the main window will appear.
-
-You are now ready to connect to your Navidrome server.
+The dependencies are listed in `requirements.txt`.
 
 ---
 
-# Getting Started
+## Getting Started
 
-Follow these steps to generate your first playlist.
+### 1. Configure Navidrome
 
-## 1. Configure the Connection
-
-Open **Settings** and enter your:
+Open **Settings** and enter:
 
 - Server URL
 - Username
 - Password
 
-Save the configuration.
+Save the settings.
+
+### 2. Connect
+
+Use the connection control to connect to your Navidrome server. Once connected, the application can retrieve the library and account data needed for Mix generation.
+
+### 3. Load and Analyze Your Library
+
+The application retrieves tracks and supporting information such as favorites and listening history. The analysis is used by the recommendation engine.
+
+### 4. Generate a Mix
+
+Choose one of the four Mix types, adjust the desired track count and available filters, then select **Generate**.
+
+### 5. Review and Save
+
+Review the generated tracks and save the Mix to Navidrome. The resulting playlist is available to other clients connected to the same Navidrome server.
 
 ---
-
-## 2. Connect to Navidrome
-
-Select **Connect**.
-
-Once the connection succeeds, your music library becomes available to the application.
-
----
-
-## 3. Analyze Your Library
-
-Navidrome Mix Studio loads information including:
-
-- Artists
-- Albums
-- Songs
-- Favorites
-- Listening history
-
-This information is used to build personalized recommendations.
-
----
-
-## 4. Generate a Mix
-
-Return to the main window and select one of the available mix types.
-
-- Daily Mix
-- Favorites Mix
-- Discovery Mix
-- Forgotten Favorites
-
-Click **Generate** to create a playlist.
-
----
-
-## 5. Save the Playlist
-
-When you are satisfied with the generated playlist, save it directly to your Navidrome server.
-
-The playlist immediately becomes available to any Subsonic-compatible client connected to the same server.
-
----
-
-## 6. Continue Exploring
-
-Additional features include:
-
-- Playlist Management
-- Library Statistics
-- Blocklist Management
-- Language Switching
-- Application Settings
-
-These tools help you organize your library and improve future recommendations.
 
 ## Important Notes
 
-> [!IMPORTANT]
-> **Use Your Regular Navidrome Account**
->
-> For the best recommendation results, sign in using the same Navidrome account that you normally use for listening to music.
->
-> Playlist recommendations are generated from your personal listening history, favorite tracks, and playlists.
->
-> If you use an administrator account or another user's account instead of your regular account, the generated mixes may not accurately reflect your own listening preferences.
->
-> If you normally listen to music using an administrator account (for example, on a single-user server), using that account is perfectly acceptable.
-
-> [!IMPORTANT]
-> **Testing Status**
->
-> Navidrome Mix Studio has been thoroughly tested with its core functionality, including:
->
-> * Navidrome connection
-> * Playlist generation
-> * Playlist management
-> * Library statistics
-> * Blocklist management
-> * Language switching
-> * Settings
-> * About dialog
->
-> The following features have not yet been fully verified across different environments:
->
-> * Automatic Generation
-> * Default Mix Settings
->
-> These features are included in the application, but additional compatibility testing is still in progress.
->
-> If you encounter any unexpected behavior, please open an Issue on GitHub. Your feedback helps improve future releases.
-
-# Usage
-
-Navidrome Mix Studio is designed to fit naturally into your everyday music listening workflow.
-
-A typical workflow is shown below.
-
-## 1. Connect to Your Library
-
-Launch the application and connect to your Navidrome server.
-
-Once connected, the application retrieves the information required for playlist generation.
+- Mix recommendations depend on the information available to the connected Navidrome account.
+- A newly created or rarely used account may have little or no listening history. Mix generation can still use available library metadata and favorites.
+- Cache and Mix-history data are scoped to the server and user context.
+- Automatic generation requires the application and its scheduler to be running at the configured time.
+- Keep your Navidrome server URL and credentials private. Do not publish configuration files containing credentials.
 
 ---
 
-## 2. Select a Mix Type
+## Testing and Project Status
 
-Choose the mix that best matches your current listening preference.
+The current development branch has passed its automated Python test workflow:
 
+- Python 3.11
+- Python syntax compilation
+- **56 automated tests passed**
 
-| Mix Type                | Best For                         |
-| ----------------------- | -------------------------------- |
-| **Daily Mix**           | Everyday listening               |
-| **Favorites Mix**       | Listening to your favorite songs |
-| **Discovery Mix**       | Exploring overlooked tracks      |
-| **Forgotten Favorites** | Rediscovering older favorites    |
+Core integration behavior has also been checked against a live Navidrome instance with a library of **6,029 tracks**:
 
----
+1. Standalone application launch
+2. Navidrome connection
+3. Full library retrieval
+4. Mix generation
+5. Mix generation with no play-count history (the previously observed unexpected six-track result)
+6. Prevention of duplicate playlist creation
 
-## 3. Generate a Playlist
+All six integration checks passed in that test environment. Results may vary with different Navidrome versions, server configurations, accounts, and libraries.
 
-Click **Generate** to create a new playlist.
-
-The recommendation engine analyzes your listening history and library metadata to produce balanced and personalized recommendations.
-
----
-
-## 4. Review the Results
-
-Preview the generated playlist.
-
-If desired, generate another playlist to explore different recommendations before saving.
+The project continues to receive maintenance and reliability improvements. A successful test run does not guarantee that every optional feature or environment has been exhaustively tested.
 
 ---
 
-## 5. Save to Navidrome
+## Architecture
 
-Save the playlist directly to your Navidrome server.
+The codebase separates the desktop interface, API communication, application services, recommendation engine, data models, and translations.
 
-The playlist immediately becomes available from any Subsonic-compatible client connected to the same server.
+Key design elements include:
 
----
+- **API layer:** communication with Navidrome through the Subsonic-compatible API
+- **Services:** library, history, playlist, cache, and scheduling operations
+- **Recommendation engine:** candidate pipeline, filtering, scoring, and diversity controls
+- **GUI:** Qt interface implemented with PySide6
+- **Localization:** JSON translation resources with runtime language switching
 
-## 6. Manage Your Playlists
-
-The built-in Playlist Manager allows you to organize playlists without leaving the application.
-
-Available operations include:
-
-- Browse playlists
-- View playlist contents
-- Search playlists
-- Delete playlists
-- Cleanup generated playlists
-
-Regular maintenance helps keep your playlist collection organized over time.
+This modular structure is intended to keep UI code, server communication, and recommendation logic independently maintainable.
 
 ---
 
-# Architecture & Design
+## License
 
-Navidrome Mix Studio is built around a modular architecture that emphasizes maintainability, scalability, and long-term development.
-
-The application separates recommendation logic, user interface, services, and localization into independent components, making the codebase easier to understand and maintain.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for the full license text.
 
 ---
 
-## Recommendation Engine
+## Acknowledgements
 
-The recommendation engine follows a modular design based on independent processing stages.
+- [Navidrome](https://www.navidrome.org/) — Self-hosted music server with a Subsonic-compatible API.
+- [Qt](https://www.qt.io/) and [PySide6](https://doc.qt.io/qtforpython-6/) — Desktop application framework and Python bindings.
+- [Python](https://www.python.org/) — Programming language and ecosystem.
 
-Core technologies include:
-
-- Strategy Pattern
-- Recommendation Pipeline
-- Candidate Filtering
-- Scoring System
-- Statistics Collection
-- Confidence Evaluation
-- Dataclass-based models
-
-This design allows each recommendation stage to evolve independently while preserving the overall architecture.
-
----
-
-## User Interface
-
-The graphical interface is implemented with Qt (PySide6).
-
-Design goals include:
-
-- Native desktop experience
-- Responsive layouts
-- Light and Dark Mode support
-- Clear separation between UI and application logic
-- Consistent user experience across the application
-
----
-
-## Internationalization
-
-The application includes a fully integrated localization system.
-
-Key features include:
-
-- JSON-based translation files
-- Runtime language switching
-- Centralized translation management
-- Easy addition of new languages
-
-Keeping all user-facing text outside the source code simplifies maintenance and future localization.
-
----
-
-## Code Quality
-
-The project follows a consistent set of development principles.
-
-- Modular architecture
-- Separation of responsibilities
-- Readable and maintainable code
-- Consistent coding style
-- Type hints throughout the project
-- Comprehensive documentation
-- GitHub release quality
-
-These principles help ensure that the project remains easy to maintain and extend over time.
-
-# Project Status
-
-Navidrome Mix Studio has reached its first stable public release.
-
-The recommendation engine, user interface, playlist management, and internationalization systems are considered feature complete. Future development will focus on improving quality and maintaining long-term stability.
-
----
-
-## Current Status
-
-
-| Component             | Status     |
-| --------------------- | ---------- |
-| Version               | **v1.0.0** |
-| Release               | Stable     |
-| Recommendation Engine | Complete   |
-| User Interface        | Complete   |
-| Playlist Manager      | Complete   |
-| Internationalization  | Complete   |
-| Documentation         | Complete   |
-
----
-
-## Development Policy
-
-The recommendation engine has entered **Feature Freeze**.
-
-Future releases will primarily focus on:
-
-- Bug fixes
-- Performance improvements
-- User experience refinements
-- Documentation
-- Long-term maintenance
-
-Major changes to the recommendation algorithm are intentionally avoided to preserve stable and predictable playlist generation.
-
----
-
-## Future Development
-
-Planned improvements may include:
-
-- Additional language support
-- User interface refinements
-- Performance optimization
-- General quality-of-life improvements
-
-Future features will continue to follow the existing architecture without compromising stability or maintainability.
-
----
-
-# License
-
-This project is licensed under the **MIT License**.
-
-You are free to use, modify, and distribute this software in accordance with the terms of the license.
-
-See the **LICENSE** file for the complete license text.
-
----
-
-# Acknowledgements
-
-Navidrome Mix Studio is built upon several outstanding open-source projects.
-
-Special thanks to:
-
-- **Navidrome** — Self-hosted music server with a Subsonic-compatible API.
-- **Qt / PySide6** — Cross-platform desktop application framework.
-- **Python** — Programming language and ecosystem.
-
-This project would not have been possible without the excellent work of the open-source community.
-
-Thank you to everyone who contributes through software, documentation, testing, and shared knowledge.
+Thank you to the open-source community and everyone who contributes through software, documentation, testing, and shared knowledge.
