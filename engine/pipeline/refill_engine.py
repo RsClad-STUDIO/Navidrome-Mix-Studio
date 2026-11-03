@@ -13,13 +13,6 @@ class RefillEngine:
     """Refill missing tracks using the same ranking and diversity rules."""
 
     @staticmethod
-<<<<<<< origin/main
-    def refill(current_songs: List[Song], scored_list: List[MusicScore], 
-               limit: int, preset_name: str, days_map: dict) -> tuple[List[Song], List[Song]]:
-        """不足分を補充し、補充された曲のリストを別途返します。"""
-        if len(current_songs) >= limit:
-            return current_songs, []
-=======
     def refill(
         current_songs: List[Song],
         scored_list: List[MusicScore],
@@ -33,7 +26,6 @@ class RefillEngine:
         final_list = list(current_songs[:limit])
         if len(final_list) >= limit:
             return final_list, []
->>>>>>> HEAD
 
         config = filter_config or {}
         available_album_count = len({
