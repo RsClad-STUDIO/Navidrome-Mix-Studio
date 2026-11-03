@@ -1,4 +1,4 @@
-"""Phase 13.4: SettingsPage - Final Polished version."""
+"""接続情報やアプリケーション動作設定を管理する画面。"""
 
 from typing import TYPE_CHECKING, List, Optional
 from PySide6.QtWidgets import (
