@@ -78,7 +78,9 @@ class MixPage(QWidget):
         params_layout.addWidget(self.lbl_limit)
         self.limit_spin = QSpinBox()
         self.limit_spin.setRange(1, 200)
-        self.limit_spin.setValue(25)
+        self.limit_spin.setValue(
+            self._context.settings.get("mix.default_count", 25)
+        )
         params_layout.addWidget(self.limit_spin)
 
         self.chk_adaptive = QCheckBox()
@@ -216,17 +218,23 @@ class MixPage(QWidget):
         name_key = playlist_name_keys.get(internal_id, TKey.STRATEGY_DAILY_NAME)
         localized_name = tr(name_key)
         
-        # 4. 日時文字列の作成 (YYYY-MM-DD HH:mm)
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-        
-        # 5. フォーマットを適用して最終的なプレイリスト名を構築
-        playlist_title = tr(TKey.PLAYLIST_NAME_FORMAT, name=localized_name, datetime=now_str)
+        # Auto-update uses a stable name; otherwise each generated Mix is kept separately.
+        auto_update = self._context.settings.get("mix.auto_update", False)
+        if auto_update:
+            playlist_title = f"[Mix] {localized_name}"
+        else:
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+            playlist_title = tr(
+                TKey.PLAYLIST_NAME_FORMAT,
+                name=localized_name,
+                datetime=now_str,
+            )
 
-        # 6. 保存実行
+        # Save the generated playlist.
         playlist = self._context.playlist_service.create_mix_playlist(
             mix_name=playlist_title,
             songs=self._current_songs,
-            auto_overwrite=True,
+            auto_overwrite=auto_update,
         )
 
         if playlist:

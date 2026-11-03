@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTime, Qt
 from api.navidrome_client import NavidromeClient
+from gui.dialogs.about_dialog import AboutDialog
 from models.server_profile import ServerProfile
 from services.translation import tr, TKey, TranslationManager
 if TYPE_CHECKING:
@@ -198,8 +199,20 @@ class SettingsPage(QWidget):
             QMessageBox.warning(self, tr(TKey.SETTINGS_TITLE), tr(TKey.WARNING_PROFILE_REQUIRED))
             return
         idx = self.combo_profiles.currentIndex()
-        if QMessageBox.question(self, tr(TKey.DIALOG_CONFIRM_DELETE_TITLE), tr(TKey.DIALOG_CONFIRM_DELETE_MSG, name=self._profiles[idx].name)) == QMessageBox.StandardButton.Yes:
-            self._profiles.pop(idx); self._refresh_profile_combos(self._profiles[0].name)
+        if idx < 0 or idx >= len(self._profiles):
+            return
+        removed_name = self._profiles[idx].name
+        if QMessageBox.question(self, tr(TKey.DIALOG_CONFIRM_DELETE_TITLE), tr(TKey.DIALOG_CONFIRM_DELETE_MSG, name=removed_name)) == QMessageBox.StandardButton.Yes:
+            self._profiles.pop(idx)
+            remaining_names = [profile.name for profile in self._profiles]
+            settings = self._context.settings
+            if settings.get("server.primary", "Local") == removed_name:
+                settings.set("server.primary", remaining_names[0])
+            if settings.get("server.secondary", "None") == removed_name:
+                settings.set("server.secondary", "None")
+            if settings.get("active_profile", "Local") == removed_name:
+                settings.set("active_profile", remaining_names[0])
+            self._refresh_profile_combos(settings.get("active_profile", remaining_names[0]))
 
     def _on_test_connection(self) -> None:
         self.lbl_test_status.setText(tr(TKey.SETTINGS_STATUS_CONNECTING)); self.lbl_test_status.setStyleSheet("color: orange;")
@@ -217,21 +230,45 @@ class SettingsPage(QWidget):
     def _on_save(self) -> None:
         """全ての情報を一括保存し、必要に応じて再起動を促す。"""
         s = self._context.settings
-        old_url = s.get("connection.server_url", "")
-        old_user = s.get("connection.username", "")
-        old_pass = s.get("connection.password", "")
+        old_primary = s.get("server.primary", "Local")
+        old_secondary = s.get("server.secondary", "None")
+        old_profiles = s.get("profiles", [])
+        old_scheduler = (
+            s.get("scheduler.enabled", False),
+            s.get("scheduler.mode", "daily"),
+            s.get("scheduler.time", "07:00"),
+            s.get("scheduler.interval_hours", 6),
+            s.get("mix.default_type", "Favorites Mix"),
+            s.get("mix.default_count", 50),
+            s.get("mix.auto_update", False),
+        )
 
+        primary_name = self.combo_primary.currentText()
+        secondary_name = self.combo_secondary.currentText()
         idx = self.combo_profiles.currentIndex()
         if idx >= 0:
-            self._profiles[idx].name = self.edit_prof_name.text()
-            self._profiles[idx].url = self.edit_server_url.text()
-            self._profiles[idx].username = self.edit_username.text()
+            old_profile_name = self._profiles[idx].name
+            new_profile_name = self.edit_prof_name.text().strip()
+            self.edit_prof_name.setText(new_profile_name)
+            if not new_profile_name:
+                QMessageBox.warning(self, tr(TKey.SETTINGS_TITLE), tr(TKey.SETTINGS_PROFILE_NAME_EMPTY))
+                return
+            if any(i != idx and p.name.casefold() == new_profile_name.casefold() for i, p in enumerate(self._profiles)):
+                QMessageBox.warning(self, tr(TKey.SETTINGS_TITLE), tr(TKey.SETTINGS_PROFILE_NAME_DUPLICATE))
+                return
+            self._profiles[idx].name = new_profile_name
+            self._profiles[idx].url = self.edit_server_url.text().strip()
+            self._profiles[idx].username = self.edit_username.text().strip()
             self._profiles[idx].password = self.edit_password.text()
+            if primary_name == old_profile_name:
+                primary_name = new_profile_name
+            if secondary_name == old_profile_name:
+                secondary_name = new_profile_name
 
         s.set("profiles", [p.to_dict() for p in self._profiles])
         s.set("active_profile", self.edit_prof_name.text())
-        s.set("server.primary", self.combo_primary.currentText())
-        s.set("server.secondary", self.combo_secondary.currentText())
+        s.set("server.primary", primary_name)
+        s.set("server.secondary", secondary_name)
         s.set("language", self.combo_lang.currentData())
         s.set("scheduler.enabled", self.chk_sched_enable.isChecked())
         s.set("scheduler.mode", self.combo_sched_mode.currentData())
@@ -244,25 +281,56 @@ class SettingsPage(QWidget):
         s.set("connection.username", self.edit_username.text())
         s.set("connection.password", self.edit_password.text())
 
+        new_profiles = [profile.to_dict() for profile in self._profiles]
+
+        def find_profile(profiles, name):
+            return next(
+                (profile for profile in profiles if profile.get("name") == name),
+                None,
+            )
+
+        old_primary_profile = find_profile(old_profiles, old_primary)
+        old_secondary_profile = find_profile(old_profiles, old_secondary)
+        new_primary_profile = find_profile(new_profiles, primary_name)
+        new_secondary_profile = find_profile(new_profiles, secondary_name)
         conn_changed = (
-            old_url != self.edit_server_url.text()
-            or old_user != self.edit_username.text()
-            or old_pass != self.edit_password.text()
+            old_primary != primary_name
+            or old_secondary != secondary_name
+            or old_primary_profile != new_primary_profile
+            or old_secondary_profile != new_secondary_profile
         )
+        if not old_profiles:
+            conn_changed = conn_changed or (
+                s.get("connection.server_url", "") != self.edit_server_url.text().strip()
+                or s.get("connection.username", "") != self.edit_username.text().strip()
+                or s.get("connection.password", "") != self.edit_password.text()
+            )
+        new_scheduler = (
+            s.get("scheduler.enabled", False),
+            s.get("scheduler.mode", "daily"),
+            s.get("scheduler.time", "07:00"),
+            s.get("scheduler.interval_hours", 6),
+            s.get("mix.default_type", "Favorites Mix"),
+            s.get("mix.default_count", 50),
+            s.get("mix.auto_update", False),
+        )
+        scheduler_changed = old_scheduler != new_scheduler
         s.save()
 
         scheduler = self._context.scheduler_service
         if scheduler:
-            if s.get("scheduler.enabled", False):
+            if not s.get("scheduler.enabled", False):
+                scheduler.stop()
+            elif scheduler_changed:
                 scheduler.start(
                     mode=s.get("scheduler.mode", "daily"),
                     target_time=s.get("scheduler.time", "07:00"),
                     interval_hours=s.get("scheduler.interval_hours", 6),
                     default_mix_type=s.get("mix.default_type", "Favorites Mix"),
                     default_count=s.get("mix.default_count", 50),
+                    auto_overwrite=s.get("mix.auto_update", False),
+                    run_on_startup=False,
                 )
-            else:
-                scheduler.stop()
 
         if conn_changed:
             QMessageBox.information(

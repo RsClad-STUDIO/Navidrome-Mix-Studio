@@ -31,9 +31,10 @@ class Song:
         if last_played_raw:
             try:
                 dt = datetime.fromisoformat(str(last_played_raw).replace("Z", "+00:00"))
-                # タイムゾーンを除去して naive datetime 化
+                # Convert aware timestamps to local time before dropping tzinfo,
+                # matching HistoryService's local-naive comparison convention.
                 if dt.tzinfo is not None:
-                    dt = dt.replace(tzinfo=None)
+                    dt = dt.astimezone().replace(tzinfo=None)
                 last_played = dt
             except Exception:
                 last_played = None

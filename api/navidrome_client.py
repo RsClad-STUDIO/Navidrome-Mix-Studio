@@ -269,20 +269,20 @@ class NavidromeClient:
 
         # 1. getRecentPlayed (最も標準的)
         res = self._request("getRecentPlayed", {"count": str(limit)})
-        recent = res.get("recentPlayed", {}).get("entry", [])
+        recent = (res.get("recentPlayed") or {}).get("entry", [])
         if recent:
             return recent if isinstance(recent, list) else [recent]
 
         # 2. getHistory (Scrobble 履歴)
         res = self._request("getHistory", {"size": str(limit)})
-        history = res.get("history", {}).get("item", [])
+        history = (res.get("history") or {}).get("item", [])
         if history:
             return history if isinstance(history, list) else [history]
 
         # 3. getNowPlaying (現在再生中・直近)
         res = self._request("getNowPlaying")
-        now_playing = res.get("nowPlaying", {}).get("entry", [])
-        return now_playing if isinstance(now_playing, list) else []
+        now_playing = (res.get("nowPlaying") or {}).get("entry", [])
+        return self._as_list(now_playing)
 
     def create_playlist(self, name: str, song_ids: List[str]) -> Optional[Dict[str, Any]]:
         """新しいプレイリストを作成します。"""
@@ -342,7 +342,7 @@ class NavidromeClient:
     def get_playlists(self) -> List[Dict[str, Any]]:
         """プレイリスト一覧を取得します。"""
         res = self._request("getPlaylists")
-        return res.get("playlists", {}).get("playlist", [])
+        return self._as_list((res.get("playlists") or {}).get("playlist"))
 
     def get_playlist(self, playlist_id: str) -> Dict[str, Any]:
         """特定のプレイリストの詳細（曲リスト含む）を取得します。"""

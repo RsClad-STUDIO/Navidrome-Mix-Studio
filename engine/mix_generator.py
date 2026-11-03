@@ -64,8 +64,14 @@ class MixGenerator:
         history = self._history_service.fetch_history(size=2000)
         days_map = self._history_service.prepare_context(history, all_songs, now)
 
+        adaptive_mode = bool(kwargs.get("adaptive_mode", True))
         clean_pool, scored_list, rotation_history = self._pipeline.execute(
-            all_songs, days_map, now, preset_name, filter_config
+            all_songs,
+            days_map,
+            now,
+            preset_name,
+            filter_config,
+            adaptive_mode=adaptive_mode,
         )
 
         # 検索欄が空なら従来どおり全候補を使用します。
@@ -90,8 +96,21 @@ class MixGenerator:
                 query, len(clean_pool)
             )
 
+        library_count = len(clean_pool)
+        favorite_ratio = (
+            sum(1 for song in clean_pool if song.starred) / library_count
+            if library_count else 0.0
+        )
+        history_coverage = (
+            sum(1 for song in clean_pool if song.id in days_map) / library_count
+            if library_count else 0.0
+        )
         context = {
             "days_since_last_play": days_map,
+            "history_loaded": len(history),
+            "favorite_ratio": favorite_ratio,
+            "history_coverage": history_coverage,
+            "adaptive_mode": adaptive_mode,
             "query": query,
             **filter_config,
         }

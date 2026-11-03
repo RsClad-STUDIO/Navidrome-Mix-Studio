@@ -23,18 +23,14 @@ class ArtistFilter:
         
         artist_counts = Counter()
         result = []
-        last_artist = None
 
         for s in songs:
             if artist_counts[s.artist] >= max_per_artist:
                 continue
 
-            # 連続再生防止 (10曲以上のリスト時のみ有効)
-            if s.artist == last_artist and len(songs) > 10:
-                continue
-
+            # Candidate filtering must not enforce playback adjacency:
+            # final playlist order is randomized later by MixGenerator.
             result.append(s)
             artist_counts[s.artist] += 1
-            last_artist = s.artist
 
         return result

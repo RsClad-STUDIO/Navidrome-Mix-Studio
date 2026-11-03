@@ -1,0 +1,181 @@
+import tempfile
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+from api.navidrome_client import NavidromeClient
+from engine.filters.artist_filter import ArtistFilter
+from engine.reporting.report_formatter import ReportFormatter
+from engine.scoring.calculator import ScoringCalculator
+from models.history import HistoryEntry
+from models.song import Song
+from services.favorites_service import FavoritesService
+from services.library_analyzer import LibraryAnalyzer
+from services.mix_history_service import MixHistoryService
+from services.playlist_service import PlaylistService
+
+
+class RegressionFixTests(unittest.TestCase):
+    def test_recent_played_timestamp_is_parsed_as_utc(self):
+        entry = HistoryEntry.from_dict({
+            "id": "song-1",
+            "title": "Title",
+            "artist": "Artist",
+            "played": "2026-11-03T12:00:00Z",
+        })
+        self.assertEqual(entry.song_id, "song-1")
+        self.assertEqual(entry.played_at.utcoffset().total_seconds(), 0)
+
+    def test_recent_played_numeric_timestamp_uses_milliseconds(self):
+        entry = HistoryEntry.from_dict({
+            "id": "song-1",
+            "played": 1793707200000,
+        })
+        self.assertIsNotNone(entry.played_at)
+        self.assertEqual(entry.played_at.tzinfo, __import__("datetime").timezone.utc)
+
+    def test_singleton_playlists_and_now_playing_are_normalized(self):
+        client = NavidromeClient("http://example.test", "user", "pass")
+        def response_for(endpoint, *args, **kwargs):
+            if endpoint == "getPlaylists":
+                return {"playlists": {"playlist": {"id": "pl-1", "name": "One"}}}
+            if endpoint == "getNowPlaying":
+                return {"nowPlaying": {"entry": {"id": "song-1", "title": "One"}}}
+            return {}
+        client._request = Mock(side_effect=response_for)
+        self.assertEqual(client.get_playlists(), [{"id": "pl-1", "name": "One"}])
+        self.assertEqual(client.get_history(), [{"id": "song-1", "title": "One"}])
+
+    def test_adaptive_mode_changes_weights_based_on_library_context(self):
+        adaptive = ScoringCalculator(
+            mix_type="Daily",
+            adaptive_mode=True,
+            favorite_ratio=0.30,
+            history_coverage=0.10,
+        )
+        fixed = ScoringCalculator(
+            mix_type="Daily",
+            adaptive_mode=False,
+        )
+        self.assertNotEqual(adaptive.w_recent, fixed.w_recent)
+        self.assertNotEqual(adaptive.w_favorite, fixed.w_favorite)
+
+    def test_history_falls_back_to_time_and_normalizes_song_id(self):
+        entry = HistoryEntry.from_dict({
+            "id": None,
+            "songId": 123,
+            "played": None,
+            "time": "2026-11-03T12:00:00Z",
+        })
+        self.assertEqual(entry.song_id, "123")
+        self.assertIsNotNone(entry.played_at)
+
+    def test_playlist_service_handles_single_song_entry(self):
+        client = SimpleNamespace(
+            get_playlist=Mock(return_value={
+                "entry": {
+                    "id": "song-1",
+                    "title": "One",
+                    "artist": "Artist",
+                }
+            })
+        )
+        songs = PlaylistService(client).get_playlist_songs("playlist-1")
+        self.assertEqual(len(songs), 1)
+        self.assertEqual(songs[0].id, "song-1")
+
+    def test_single_recent_played_and_history_entries_are_normalized(self):
+        client = NavidromeClient("http://example.test", "user", "pass")
+        client._request = Mock(return_value={
+            "recentPlayed": {"entry": {"id": "recent-1"}}
+        })
+        self.assertEqual(client.get_history(), [{"id": "recent-1"}])
+        client._request = Mock(return_value={
+            "history": {"item": {"id": "history-1"}}
+        })
+        self.assertEqual(client.get_history(), [{"id": "history-1"}])
+
+    def test_artist_filter_does_not_drop_adjacent_same_artist_candidates(self):
+        songs = [
+            Song(id=str(i), title=f"Song {i}", artist="Same Artist")
+            for i in range(4)
+        ]
+        filtered = ArtistFilter().apply(songs)
+        self.assertEqual([song.id for song in filtered], ["0", "1", "2", "3"])
+
+    def test_empty_playlist_report_does_not_divide_by_zero(self):
+        data = SimpleNamespace(
+            preset="Daily Mix",
+            library_total=0,
+            pool_count=0,
+            gen_time_ms=0,
+            strat_initial_count=0,
+            limit=25,
+            strat_composition={},
+            refill_total=0,
+            conf_refill_penalty_pct=0,
+            confidence=0,
+            utilization=[],
+            rotation=SimpleNamespace(affected=0, avg_penalty=0.0),
+            scores=SimpleNamespace(highest=0.0, lowest=0.0, average=0.0, median=0.0),
+            diversity=SimpleNamespace(
+                unique_artists=0, total_artists=0,
+                unique_albums=0, total_albums=0,
+                ratio_artist=0.0, ratio_album=0.0,
+                assessment_level="Low",
+            ),
+            final_total=0,
+            final_composition={"discovery": 1},
+        )
+        report = ReportFormatter.format(data)
+        self.assertIn("Result: 0 songs generated successfully.", report)
+        self.assertIn("Random Discovery", report)
+
+    def test_favorites_cache_keys_are_server_scoped(self):
+        cache = Mock()
+        cache.get.return_value = None
+        first_client = SimpleNamespace(
+            server_url="http://server-one", username="user",
+            get_starred=Mock(return_value={"song": [], "artist": [], "album": []}),
+        )
+        second_client = SimpleNamespace(
+            server_url="http://server-two", username="user",
+            get_starred=Mock(return_value={"song": [], "artist": [], "album": []}),
+        )
+        FavoritesService(first_client, cache).sync_favorites()
+        FavoritesService(second_client, cache).sync_favorites()
+        keys = [call.args[0] for call in cache.get.call_args_list]
+        self.assertEqual(len(keys), 2)
+        self.assertNotEqual(keys[0], keys[1])
+
+    def test_library_profile_cache_keys_are_server_scoped(self):
+        first = LibraryAnalyzer(cache_namespace="server-one|user")
+        second = LibraryAnalyzer(cache_namespace="server-two|user")
+        self.assertNotEqual(first._cache_key, second._cache_key)
+
+    def test_corrupt_mix_history_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "mix_history.json"
+            original = "{broken json"
+            path.write_text(original, encoding="utf-8")
+            service = MixHistoryService(storage_path=str(path))
+            self.assertFalse(service.save_mix(
+                preset="daily_mix",
+                timestamp="2026-11-03T12:00:00",
+                songs=[{"id": "song-1"}],
+            ))
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+    def test_mix_history_storage_is_server_scoped(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base = str(Path(temp_dir) / "mix_history.json")
+            first = MixHistoryService(storage_path=base, namespace="server-one|user")
+            second = MixHistoryService(storage_path=base, namespace="server-two|user")
+            self.assertNotEqual(first._storage_path, second._storage_path)
+            self.assertTrue(first._storage_path.exists())
+            self.assertTrue(second._storage_path.exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

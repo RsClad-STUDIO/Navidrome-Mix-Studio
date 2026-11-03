@@ -62,12 +62,15 @@ class Application:
         self._analysis_service = AnalysisService(self._logger)
         self._blacklist_service = BlacklistService(logger=self._logger)
         self._preset_service = PresetService(logger=self._logger)
-        self._mix_history_service = MixHistoryService()
+        self._mix_history_service = MixHistoryService(
+            namespace=f"{self._client.server_url}|{self._client.username}"
+        )
 
         # 4. 分析およびお気に入りサービスの初期化
         self._library_analyzer = LibraryAnalyzer(
             cache_manager=self._cache_manager,
-            logger=self._logger
+            logger=self._logger,
+            cache_namespace=f"{self._client.server_url}|{self._client.username}",
         )
         self._favorites_service = FavoritesService(
             self._client, self._cache_manager, self._logger
@@ -156,6 +159,7 @@ class Application:
             interval_hours=self._settings.get("scheduler.interval_hours", 6),
             default_mix_type=self._settings.get("mix.default_type", "Favorites Mix"),
             default_count=self._settings.get("mix.default_count", 50),
+            auto_overwrite=self._settings.get("mix.auto_update", False),
         )
 
     def run(self) -> int:

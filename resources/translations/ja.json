@@ -135,7 +135,7 @@
     "settings.scheduler.mode.interval": "一定間隔",
     "settings.group.mix_defaults": "ミックス初期設定",
     "settings.label.default_count": "標準の曲数:",
-    "settings.label.auto_update": "起動時にミックスを自動更新する",
+    "settings.label.auto_update": "既存の生成済みミックスを自動上書きする",
     "settings.button.save": "変更を保存",
     "settings.button.reset": "変更を破棄",
     "playlist.name.format": "{name} • {datetime}",
@@ -200,5 +200,7 @@
     "playlist_manager.no_old_generated": "削除対象となる古い生成済みプレイリストはありません。",
     "about.label.python": "Python:",
     "about.label.pyside": "PySide6:",
-    "error.license_load": "ファイルの読み込みに失敗しました: {error}"
+    "error.license_load": "ファイルの読み込みに失敗しました: {error}",
+    "settings.profile.name_empty": "プロファイル名を入力してください。",
+    "settings.profile.name_duplicate": "同じ名前のプロファイルが既に存在します。"
 }

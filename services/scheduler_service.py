@@ -23,6 +23,8 @@ class SchedulerWorker(QThread):
         interval_hours: int = 6,
         default_mix_type: str = "Favorites Mix",
         default_count: int = 50,
+        auto_overwrite: bool = True,
+        run_on_startup: bool = True,
         logger: Optional[logging.Logger] = None,
     ) -> None:
         super().__init__()
@@ -32,6 +34,8 @@ class SchedulerWorker(QThread):
         self._interval_hours = max(1, int(interval_hours))
         self._default_mix_type = default_mix_type
         self._default_count = max(1, int(default_count))
+        self._auto_overwrite = bool(auto_overwrite)
+        self._run_on_startup = bool(run_on_startup)
         self._logger = logger or logging.getLogger(__name__)
         self._stop_event = threading.Event()
         self._last_executed_day: Optional[str] = None
@@ -45,7 +49,10 @@ class SchedulerWorker(QThread):
         self._logger.info("Scheduler thread started (mode=%s).", self._mode)
 
         if self._mode == "startup":
-            self._execute_mix()
+            if self._run_on_startup:
+                self._execute_mix()
+            else:
+                self._logger.info("Startup Mix skipped while applying runtime settings.")
             self._logger.info("Scheduler thread stopped.")
             return
 
@@ -90,9 +97,14 @@ class SchedulerWorker(QThread):
                 self._logger.warning("Auto Mix generated no songs; playlist was not changed.")
                 return
 
+            playlist_name = f"[Mix] {self._default_mix_type}"
+            if not self._auto_overwrite:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+                playlist_name = f"[Mix] {self._default_mix_type} • {timestamp}"
             playlist = self._mix_service.save_to_navidrome(
-                mix_name=self._default_mix_type,
+                mix_name=playlist_name,
                 songs=songs,
+                auto_overwrite=self._auto_overwrite,
             )
             if playlist:
                 self._logger.info(
@@ -141,6 +153,8 @@ class SchedulerService:
         interval_hours: int = 6,
         default_mix_type: str = "Favorites Mix",
         default_count: int = 50,
+        auto_overwrite: bool = True,
+        run_on_startup: bool = True,
     ) -> None:
         """設定に従ってスケジューラーを起動します。"""
         if mode not in self.SUPPORTED_MODES:
@@ -162,6 +176,8 @@ class SchedulerService:
             interval_hours=interval_hours,
             default_mix_type=preset_name,
             default_count=default_count,
+            auto_overwrite=auto_overwrite,
+            run_on_startup=run_on_startup,
             logger=self._logger,
         )
         self._worker = worker

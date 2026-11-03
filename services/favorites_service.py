@@ -1,6 +1,7 @@
 """Navidromeのお気に入り（Star）データを取得・同期・管理するサービス。"""
 
 import logging
+import hashlib
 from typing import Optional, Set
 from api.navidrome_client import NavidromeClient
 from cache.cache_manager import CacheManager
@@ -25,7 +26,9 @@ class FavoritesService:
 
     def sync_favorites(self) -> None:
         """Navidrome APIまたはキャッシュからFavorites情報を最新化します。"""
-        cache_key = "favorites_data"
+        server_identity = f"{self._client.server_url}|{self._client.username}"
+        server_hash = hashlib.sha256(server_identity.encode("utf-8")).hexdigest()[:16]
+        cache_key = f"favorites_data_{server_hash}"
         if self._cache_manager:
             cached = self._cache_manager.get(cache_key)
             if cached:

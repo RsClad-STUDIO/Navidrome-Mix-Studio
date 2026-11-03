@@ -1,6 +1,7 @@
 """全ライブラリを多角的に解析し、LibraryProfile を作成・キャッシュするサービス。"""
 
 from collections import Counter
+import hashlib
 import logging
 from typing import List, Optional
 from cache.cache_manager import CacheManager
@@ -18,14 +19,17 @@ class LibraryAnalyzer:
         self,
         cache_manager: Optional[CacheManager] = None,
         logger: Optional[logging.Logger] = None,
+        cache_namespace: str = "default",
     ) -> None:
         self._cache_manager = cache_manager
         self._logger = logger or logging.getLogger(__name__)
+        namespace_hash = hashlib.sha256(cache_namespace.encode("utf-8")).hexdigest()[:16]
+        self._cache_key = f"{self.CACHE_KEY}_{namespace_hash}"
 
     def analyze_library(self, songs: List[Song], force_refresh: bool = False) -> LibraryProfile:
         """ライブラリ全体を解析し、キャッシュがあれば再利用してプロファイルを生成します。"""
         if not force_refresh and self._cache_manager:
-            cached_data = self._cache_manager.get(self.CACHE_KEY)
+            cached_data = self._cache_manager.get(self._cache_key)
             if cached_data and isinstance(cached_data, dict):
                 self._logger.info("Retrieved LibraryProfile from cache.")
                 return LibraryProfile.from_dict(cached_data)
@@ -97,7 +101,7 @@ class LibraryAnalyzer:
         )
 
         if self._cache_manager:
-            self._cache_manager.set(self.CACHE_KEY, profile.to_dict())
+            self._cache_manager.set(self._cache_key, profile.to_dict())
 
         self._logger.info("Library analysis completed.")
         return profile

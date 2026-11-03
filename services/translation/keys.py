@@ -205,6 +205,8 @@ class TKey(StrEnum):
     COMMON_UNKNOWN_YEAR = "common.unknown_year"
     SETTINGS_ABOUT_TOOLTIP = "settings.about.tooltip"
     SETTINGS_PROFILE_NEW_FORMAT = "settings.profile.new_format"
+    SETTINGS_PROFILE_NAME_EMPTY = "settings.profile.name_empty"
+    SETTINGS_PROFILE_NAME_DUPLICATE = "settings.profile.name_duplicate"
     ABOUT_LABEL_PYTHON = "about.label.python"
     ABOUT_LABEL_PYSIDE = "about.label.pyside"
     ERROR_LICENSE_LOAD = "error.license_load"

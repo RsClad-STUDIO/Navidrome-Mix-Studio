@@ -29,7 +29,21 @@ class RecommendationScorer:
         log_max_play = math.log10(max_play_count + 1)
         days_map = context.get("days_since_last_play", {})
 
-        if is_discovery_mode:
+        if context.get("adaptive_mode", True):
+            favorite_ratio = min(1.0, max(0.0, context.get("favorite_ratio", 0.0)))
+            history_coverage = min(1.0, max(0.0, context.get("history_coverage", 0.0)))
+            weight_similarity = min(0.25, max(0.10, favorite_ratio + 0.10))
+            if is_discovery_mode:
+                weight_play_count = 0.05
+                weight_recency = 0.05
+            else:
+                weight_play_count = 0.35
+                weight_recency = 0.25 if history_coverage >= 0.5 else 0.10
+            weight_random = max(
+                0.0,
+                1.0 - weight_play_count - weight_recency - weight_similarity,
+            )
+        elif is_discovery_mode:
             weight_play_count = 0.05
             weight_recency = 0.05
             weight_similarity = 0.20

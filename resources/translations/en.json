@@ -135,7 +135,7 @@
     "settings.scheduler.mode.interval": "Interval",
     "settings.group.mix_defaults": "Default Mix Settings",
     "settings.label.default_count": "Default Song Count:",
-    "settings.label.auto_update": "Automatically Update Mixes at Startup",
+    "settings.label.auto_update": "Automatically overwrite existing generated mixes",
     "settings.button.save": "Save All Changes",
     "settings.button.reset": "Discard Changes",
     "playlist.name.format": "{name} • {datetime}",
@@ -200,5 +200,7 @@
     "playlist_manager.no_old_generated": "No old generated playlists were found.",
     "about.label.python": "Python:",
     "about.label.pyside": "PySide6:",
-    "error.license_load": "Error loading file: {error}"
+    "error.license_load": "Error loading file: {error}",
+    "settings.profile.name_empty": "Profile name cannot be empty.",
+    "settings.profile.name_duplicate": "A profile with this name already exists."
 }

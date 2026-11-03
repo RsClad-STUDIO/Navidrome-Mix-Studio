@@ -170,8 +170,11 @@ class PlaylistManagerPage(QWidget):
         playlist: Playlist = selected[0].data(Qt.ItemDataRole.UserRole)
         self._update_info_display(playlist)
         self.setCursor(Qt.CursorShape.WaitCursor)
-        self._current_songs = self._context.playlist_service.get_playlist_songs(playlist.id)
-        self._update_songs_table(); self.unsetCursor()
+        try:
+            self._current_songs = self._context.playlist_service.get_playlist_songs(playlist.id)
+            self._update_songs_table()
+        finally:
+            self.unsetCursor()
 
     def _update_info_display(self, playlist: Optional[Playlist] = None) -> None:
         if not playlist:
@@ -205,13 +208,28 @@ class PlaylistManagerPage(QWidget):
         targets = []
         for p in self._all_playlists:
             if " • " not in p.name and "[Mix]" not in p.name: continue
-            raw_date = getattr(p, "changed", getattr(p, "created", ""))
+            raw_date = getattr(p, "changed", None) or getattr(p, "created", None)
             try:
-                if datetime.fromisoformat(raw_date.replace("Z", "+00:00")).timestamp() < cutoff.timestamp(): targets.append(p)
-            except: continue
+                if isinstance(raw_date, datetime):
+                    playlist_date = raw_date
+                elif isinstance(raw_date, str) and raw_date:
+                    playlist_date = datetime.fromisoformat(
+                        raw_date.replace("Z", "+00:00")
+                    )
+                else:
+                    continue
+                if playlist_date.timestamp() < cutoff.timestamp():
+                    targets.append(p)
+            except (TypeError, ValueError, OverflowError):
+                continue
         if not targets:
             QMessageBox.information(self, tr(TKey.PLAYLIST_MGR_GROUP_CLEANUP), tr(TKey.PLAYLIST_MGR_NO_OLD_GENERATED)); return
         if QMessageBox.question(self, tr(TKey.DIALOG_CLEANUP_TITLE), tr(TKey.DIALOG_CLEANUP_MSG, count=len(targets), days=self.spin_cleanup_days.value()), QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
             self.setCursor(Qt.CursorShape.WaitCursor)
-            for p in targets: self._context.playlist_service.delete_playlist(p.id)
-            self.refresh_playlists(); self._clear_details(); self.unsetCursor()
+            try:
+                for playlist in targets:
+                    self._context.playlist_service.delete_playlist(playlist.id)
+                self.refresh_playlists()
+                self._clear_details()
+            finally:
+                self.unsetCursor()

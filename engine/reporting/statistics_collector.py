@@ -48,8 +48,8 @@ class StatisticsCollector:
             make_util("Favorite", len([ms for ms in top_pool if ms.song.starred]), strat_counts["favorite"]),
             make_util("Recent", len([ms for ms in top_pool if ms.song_id in days_map and days_map[ms.song_id] <= 14]), strat_counts["recent"]),
             make_util("High PlayCount", len([ms for ms in top_pool if ms.play_count >= 50]), strat_counts["play_count"]),
-            make_util("Album Candidates", len([ms for ms in top_pool if ms.album in {s.album for s in filtered_songs[:10]}]), strat_counts.get("similarity_album", 0)),
-            make_util("Artist Candidates", len([ms for ms in top_pool if ms.artist in {s.artist for s in filtered_songs[:10]}]), strat_counts.get("similarity", 0) + strat_counts.get("similarity_artist", 0))
+            make_util("Album Candidates", len([ms for ms in top_pool if ms.album in {s.album for s in filtered_songs}]), strat_counts.get("similarity_album", 0)),
+            make_util("Artist Candidates", len([ms for ms in top_pool if ms.artist in {s.artist for s in filtered_songs}]), strat_counts.get("similarity", 0) + strat_counts.get("similarity_artist", 0))
         ]
 
         # 3. Confidence 計算 (不確実性による減点方式)
@@ -62,7 +62,15 @@ class StatisticsCollector:
         ref_penalty_pct = int(refill_penalty_raw * 0.5)
         disc_penalty_pct = int(discovery_penalty_raw * 0.4)
         
-        confidence = max(40, min(100, 100 - ref_penalty_pct - disc_penalty_pct))
+        completion_ratio = min(len(final_songs), limit) / limit if limit > 0 else 1.0
+        completion_penalty_pct = int((1.0 - completion_ratio) * 100)
+        confidence = max(
+            0,
+            min(
+                100,
+                100 - ref_penalty_pct - disc_penalty_pct - completion_penalty_pct,
+            ),
+        )
 
         # 4. その他統計 (Rotation / Score / Diversity)
         rot = RotationCalculator.get_stats(scored_list, rotation_history)
@@ -74,15 +82,21 @@ class StatisticsCollector:
         lib_alb = len(set(s.album for s in all_songs)) or 1
         mix_art = len(set(s.artist for s in final_songs))
         mix_alb = len(set(s.album for s in final_songs))
-        art_ratio = (mix_art / lib_art * 100)
-        div_level = "Low" if art_ratio < 15 else "Moderate" if art_ratio < 30 else "High" if art_ratio < 50 else "Excellent"
+        # Measure diversity against the maximum possible unique entities in this Mix,
+        # not against the entire library (which unfairly penalizes large libraries).
+        max_mix_artists = min(len(final_songs), lib_art)
+        max_mix_albums = min(len(final_songs), lib_alb)
+        art_ratio = (mix_art / max_mix_artists * 100) if max_mix_artists else 0.0
+        album_ratio = (mix_alb / max_mix_albums * 100) if max_mix_albums else 0.0
+        combined_diversity = (art_ratio + album_ratio) / 2
+        div_level = "Low" if combined_diversity < 15 else "Moderate" if combined_diversity < 30 else "High" if combined_diversity < 50 else "Excellent"
 
         return StatisticsData(
             preset=preset_name,
             limit=limit,
             library_total=len(all_songs),
             pool_count=len(clean_pool),
-            history_loaded=10,
+            history_loaded=context.get("history_loaded", 0),
             gen_time_ms=gen_time_ms,
             confidence=confidence,
             conf_intended_count=len(filtered_songs),
@@ -93,7 +107,7 @@ class StatisticsCollector:
             utilization=util_list, 
             rotation=RotationStats(rot['rotation_count'], rot['avg_penalty'], rot['max_penalty'], rot.get('rotation_exempt', 0)), 
             scores=ScoreStats(final_scores[0] if final_scores else 0, avg_s, med_s, final_scores[-1] if final_scores else 0, std_s), 
-            diversity=DiversityStats(mix_art, lib_art, mix_alb, lib_alb, art_ratio, (mix_alb/lib_alb*100), div_level, "Balanced diversity."),
+            diversity=DiversityStats(mix_art, max_mix_artists, mix_alb, max_mix_albums, art_ratio, album_ratio, div_level, "Balanced diversity."),
             strat_initial_count=len(filtered_songs),
             refill_total=refill_total,
             final_total=len(final_songs),
