@@ -4,13 +4,14 @@ import logging
 import random
 from typing import List, Optional, Set
 
-from engine.diversity import DiversityEngine
+from engine.filters.diversity_engine import DiversityEngine
 from models.song import Song
 from services.blacklist_service import BlacklistService
 from services.favorites_service import FavoritesService
 
+
 class CandidateGenerator:
-    """ライブラリから多角的な候補曲母集団を生成するクラス。"""
+    """ライブラリからフィルター済みの候補曲母集団を生成するクラス。"""
 
     def __init__(
         self,
@@ -33,12 +34,10 @@ class CandidateGenerator:
         suppress_demo: bool = False,
         suppress_acoustic: bool = False,
     ) -> List[Song]:
-        """指定制限数の5〜10倍規模の候補曲リストを効率的に抽出・フィルターします。"""
-        desired_candidate_count = target_limit * multiplier
-        self._logger.info(f"Extracting candidates target: {desired_candidate_count} songs.")
-
-        candidates: List[Song] = []
-        seen_ids: Set[str] = set()
+        """重複・禁止曲・指定バージョンを除外し、お気に入りを優先して候補を返す。"""
+        desired_candidate_count = max(0, target_limit * multiplier)
+        if desired_candidate_count == 0:
+            return []
 
         div_engine = DiversityEngine(
             suppress_instrumental=suppress_instrumental,
@@ -48,37 +47,36 @@ class CandidateGenerator:
             suppress_acoustic=suppress_acoustic,
         )
 
-        # 1. フィルター処理
-        for song in all_songs:
-            if song.id in seen_ids:
-                continue
+        favorites: List[Song] = []
+        non_favorites: List[Song] = []
+        seen_ids: Set[str] = set()
 
-            # Blacklist 除外
+        for song in all_songs:
+            if not song.id or song.id in seen_ids:
+                continue
+            seen_ids.add(song.id)
+
             if self._blacklist_service and self._blacklist_service.is_blacklisted(song):
                 continue
-
-            # Version 除外
             if div_engine.is_suppressed_version(song):
                 continue
 
-            # Starredフラグの同期
             if self._favorites_service and self._favorites_service.is_song_favorite(song.id):
                 song.starred = True
 
-            candidates.append(song)
-            seen_ids.add(song.id)
-
-        # ← 修正後
-        favorites = []
-        non_favorites = []
-        for song in all_songs:
-            ...
             if song.starred:
-                favorites.append(song)   # Favoriteは全件必ず保持
+                favorites.append(song)
             else:
                 non_favorites.append(song)
 
-        random.shuffle(non_favorites)    # non-favoriteだけシャッフル
+        random.shuffle(non_favorites)
         remaining_slots = max(0, desired_candidate_count - len(favorites))
         result = favorites + non_favorites[:remaining_slots]
-        random.shuffle(result)           # 最後に全体をシャッフル
+        random.shuffle(result)
+
+        self._logger.info(
+            "Candidate pool generated: %s favorites + %s non-favorites",
+            len(favorites),
+            len(result) - len(favorites),
+        )
+        return result
