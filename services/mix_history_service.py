@@ -53,7 +53,20 @@ class MixHistoryService:
             )
             return []
 
+    @staticmethod
+    def _mix_signature(preset: str, songs: List[Dict[str, str]]) -> Optional[tuple]:
+        """同じプリセット・同じ楽曲構成を同一Mixとして判定する。"""
+        song_ids = sorted({
+            str(song.get("id"))
+            for song in songs
+            if isinstance(song, dict) and song.get("id") is not None
+        })
+        if not song_ids:
+            return None
+        return (str(preset).strip().casefold(), tuple(song_ids))
+
     def save_mix(self, preset: str, timestamp: str, songs: List[Dict[str, str]], theme: Optional[str] = None) -> bool:
+        self.last_save_was_duplicate = False
         history = self.load_history()
         if self._load_failed:
             self._logger.error(
@@ -61,6 +74,25 @@ class MixHistoryService:
                 self._storage_path,
             )
             return False
+
+        signature = self._mix_signature(preset, songs)
+        if signature is not None:
+            for existing in history:
+                if not isinstance(existing, dict):
+                    continue
+                existing_signature = self._mix_signature(
+                    existing.get("preset", ""),
+                    existing.get("songs", []),
+                )
+                if existing_signature == signature:
+                    self.last_save_was_duplicate = True
+                    self._logger.info(
+                        "Duplicate Mix history skipped: preset=%s, songs=%s",
+                        preset,
+                        len(signature[1]),
+                    )
+                    return False
+
         record = {
             "timestamp": timestamp,
             "preset": preset,
