@@ -7,6 +7,28 @@ TRANSLATION_DIR = Path(__file__).resolve().parents[1] / "resources" / "translati
 
 
 class TranslationResourceTests(unittest.TestCase):
+    def test_translation_enum_has_no_duplicate_member_names(self):
+        import ast
+
+        keys_path = TRANSLATION_DIR.parents[1] / "services" / "translation" / "keys.py"
+        tree = ast.parse(keys_path.read_text(encoding="utf-8"))
+        enum_class = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "TKey"
+        )
+        member_names = []
+        for node in enum_class.body:
+            if isinstance(node, (ast.Assign, ast.AnnAssign)):
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                for target in targets:
+                    if isinstance(target, ast.Name):
+                        member_names.append(target.id)
+        self.assertEqual(
+            len(member_names),
+            len(set(member_names)),
+            "TKey contains duplicate member names",
+        )
+
     def test_four_additional_languages_are_discoverable(self):
         expected = {
             "es": "Español",
