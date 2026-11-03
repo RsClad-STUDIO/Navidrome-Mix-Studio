@@ -2,15 +2,17 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from api.navidrome_client import NavidromeClient
 from engine.candidate_generator import CandidateGenerator
 from engine.filters.artist_filter import ArtistFilter
 from engine.filters.album_filter import AlbumFilter
 from engine.filters.diversity_engine import DiversityEngine
+from engine.mix_generator import MixGenerator
 from engine.pipeline.purge_engine import PurgeEngine
 from engine.pipeline.refill_engine import RefillEngine
+from engine.pipeline.rotation_calculator import RotationCalculator
 from engine.strategies.daily_strategy import DailyStrategy
 from engine.reporting.report_formatter import ReportFormatter
 from engine.scoring.calculator import ScoringCalculator
@@ -76,6 +78,92 @@ class RegressionFixTests(unittest.TestCase):
         result = generator.generate_candidates(songs, target_limit=1, multiplier=1)
         self.assertEqual({song.id for song in result}, {"fav-1", "fav-2"})
         self.assertTrue(all(song.starred for song in result))
+
+    def test_future_playback_timestamps_do_not_produce_negative_age(self):
+        now = datetime(2026, 11, 2, 12, 0, 0)
+        entry = HistoryEntry(
+            song_id="future-song",
+            title="Future",
+            artist="Artist",
+            played_at=now + timedelta(days=2),
+        )
+        days = HistoryService(client=None).prepare_context([entry], [], now)
+        self.assertEqual(days["future-song"], 0)
+
+    def test_diversity_engine_legacy_title_helpers_remain_available(self):
+        song = Song(id="1", title="Song (Live)", artist="Artist")
+        self.assertEqual(DiversityEngine.normalize_title(song.title), "song")
+        self.assertTrue(DiversityEngine.is_version_variant(song))
+
+    def test_rotation_calculator_legacy_helpers_remain_available(self):
+        self.assertEqual(RotationCalculator.calculate_penalty_rate(10, False), 0.02)
+        self.assertEqual(RotationCalculator.calculate_penalty_rate(10, True), 0.0)
+        self.assertEqual(RotationCalculator.calculate_penalty_rate(-1, False), 0.0)
+
+        old_low = Song(id="old-low", title="Old low", artist="A")
+        old_high = Song(id="old-high", title="Old high", artist="B")
+        fresh = Song(id="fresh", title="Fresh", artist="C")
+        details = {
+            old_low.id: {"song": old_low, "final_score": 10.0},
+            old_high.id: {"song": old_high, "final_score": 20.0},
+            fresh.id: {"song": fresh, "final_score": 15.0},
+        }
+        result = RotationCalculator.apply_rotation_budget(
+            candidate_selected=[old_low, old_high],
+            prev_mix_ids={old_low.id, old_high.id},
+            prev_mix_songs_map={old_low.id: old_low, old_high.id: old_high},
+            score_details=details,
+            limit=2,
+            max_budget=1,
+        )
+        self.assertEqual({song.id for song in result}, {"old-high", "fresh"})
+
+    def test_mix_generator_uses_server_side_search_query(self):
+        song = Song(
+            id="song-1",
+            title="Ambient Song",
+            artist="Ambient Artist",
+            album="Ambient Album",
+        )
+        score = MusicScore(
+            song_id=song.id,
+            title=song.title,
+            artist=song.artist,
+            album=song.album,
+            play_count=0,
+            song=song,
+            total_score=100.0,
+        )
+        library_service = Mock()
+        library_service.fetch_songs.return_value = [song]
+        history_service = Mock()
+        history_service.fetch_history.return_value = []
+        history_service.prepare_context.return_value = {}
+        history_service.last_fetch_succeeded = True
+        mix_history_service = Mock()
+
+        generator = MixGenerator(
+            library_service=library_service,
+            history_service=history_service,
+            mix_history_service=mix_history_service,
+        )
+        generator._pipeline = Mock()
+        generator._pipeline.execute.return_value = ([song], [score], {})
+        strategy = Mock()
+        strategy.generate.return_value = [song]
+        generator._strategy_factory = Mock()
+        generator._strategy_factory.create.return_value = strategy
+        generator._refill_engine = Mock()
+        generator._refill_engine.refill.return_value = ([song], [])
+        generator._stats_collector = Mock()
+        generator._stats_collector.collect.return_value = SimpleNamespace()
+
+        with patch("engine.mix_generator.DiversityEngine") as diversity_factory:
+            diversity_factory.return_value.apply.return_value = [song]
+            with patch("engine.mix_generator.ReportFormatter.format", return_value=""):
+                generator.generate_mix("Daily Mix", limit=1, query="Ambient")
+
+        library_service.fetch_songs.assert_called_once_with(query="Ambient")
 
     def test_live_filter_remains_opt_in_by_default(self):
         song = Song(
