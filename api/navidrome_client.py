@@ -264,25 +264,33 @@ class NavidromeClient:
     def get_history(
         self, count: int = 500, size: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        """再生履歴を取得します。getRecentPlayed / getHistory / getNowPlaying を段階的に試行。"""
+        """履歴を取得。正常な空履歴とAPI取得失敗を区別するため、通信エラーを通知する。"""
         limit = size if size is not None else count
+        attempts = (
+            ("getRecentPlayed", {"count": str(limit)}, "recentPlayed", "entry"),
+            ("getHistory", {"size": str(limit)}, "history", "item"),
+            ("getNowPlaying", {}, "nowPlaying", "entry"),
+        )
+        errors = []
 
-        # 1. getRecentPlayed (最も標準的)
-        res = self._request("getRecentPlayed", {"count": str(limit)})
-        recent = (res.get("recentPlayed") or {}).get("entry", [])
-        if recent:
-            return recent if isinstance(recent, list) else [recent]
+        for endpoint, params, response_key, entry_key in attempts:
+            try:
+                response = self._request(endpoint, params, raise_on_error=True)
+            except RuntimeError as exc:
+                # Unsupported endpoints may be skipped; other failures mean history
+                # availability cannot be established.
+                if "404" not in str(exc):
+                    errors.append(str(exc))
+                continue
 
-        # 2. getHistory (Scrobble 履歴)
-        res = self._request("getHistory", {"size": str(limit)})
-        history = (res.get("history") or {}).get("item", [])
-        if history:
-            return history if isinstance(history, list) else [history]
+            entries = (response.get(response_key) or {}).get(entry_key, [])
+            normalized = self._as_list(entries)
+            if normalized:
+                return normalized
 
-        # 3. getNowPlaying (現在再生中・直近)
-        res = self._request("getNowPlaying")
-        now_playing = (res.get("nowPlaying") or {}).get("entry", [])
-        return self._as_list(now_playing)
+        if errors:
+            raise RuntimeError("Unable to retrieve playback history: " + "; ".join(errors))
+        return []
 
     def create_playlist(self, name: str, song_ids: List[str]) -> Optional[Dict[str, Any]]:
         """新しいプレイリストを作成します。"""
