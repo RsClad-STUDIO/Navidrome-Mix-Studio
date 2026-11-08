@@ -61,12 +61,12 @@ class StatisticsData:
     strat_composition: Dict[str, int]
     final_composition: Dict[str, int]
 
-    # --- Confidence Detail (Phase 13.0 追加) ---
+    # 信頼度の内訳。
     conf_intended_count: int = 0
     conf_disc_count: int = 0
     conf_disc_penalty_pct: int = 0
     conf_refill_count: int = 0
     conf_refill_penalty_pct: int = 0
     
-    final_total: int = 0  # ★これが必要でした
+    final_total: int = 0  # 最終的に生成された曲数。
     disc_stats: Dict[str, Any] = field(default_factory=dict)

@@ -1,4 +1,4 @@
-"""Navidrome APIとの通信を担当するクライアントモジュール。 (Phase 13.3 対応版)"""
+"""Navidrome APIとの通信を担当するクライアントモジュール。"""
 
 import logging
 import time
@@ -38,7 +38,7 @@ class NavidromeClient:
         return value if isinstance(value, list) else [value]
 
     def test_connection(self) -> ConnectionResult:
-        """Phase 11: 接続テストを実施する。"""
+        """Navidromeサーバーへの接続可否を確認します。"""
         if not self.server_url:
             return ConnectionResult(success=False, error_message="Server URL is empty")
 

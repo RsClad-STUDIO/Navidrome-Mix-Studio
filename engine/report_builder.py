@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Any
 
 class ReportBuilder:
-    """Phase 12.6: 統計の正確性と分析性を重視したレポートフォーマッタ"""
+    """選曲結果の統計情報から、表示用テキストレポートを生成します。"""
 
     @staticmethod
     def build_report(stats: Dict[str, Any]) -> str:
@@ -20,8 +20,8 @@ class ReportBuilder:
         mix_alb = stats.get("mix_albums", 0)
 
         # --- 2. 信頼度 (Recommendation Confidence) の計算 ---
-        # Strategyが本来の構成をどれだけ維持できたか
-        # 100% - (Refill依存率 * 50) - (Random依存率 * 20)
+        # 初期選出の構成に対する信頼度を、補充率とDiscovery比率に応じて評価する。
+        
         refill_rate = (refill_total / limit) if limit > 0 else 0
         random_rate = (stats.get("final_src_discovery", 0) / limit) if limit > 0 else 0
         conf_score = 100 - (refill_rate * 50) - (random_rate * 20)
@@ -96,7 +96,7 @@ class ReportBuilder:
                     report.append(f"  {src_name.capitalize():<18} : {count}")
         report.append("")
 
-        # Strategy Composition (Forgottenの名称改善対応)
+        # プリセットに応じて、選曲元の表示名を切り替える。
         report.append("Strategy Composition")
         if "Discovery Mix" in preset:
             report.append(f"{'Discovery Layer':<20} : Scanned {stats.get('disc_scanned', 0)}, Inserted {stats.get('disc_inserted', 0)}")

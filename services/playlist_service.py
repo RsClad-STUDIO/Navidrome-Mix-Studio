@@ -1,4 +1,4 @@
-"""プレイリストの生成・操作を担当するサービス。 (Phase 13.5 連携修正版)"""
+"""Navidromeプレイリストの取得・作成・更新・削除を担当するサービス。"""
 
 import logging
 from typing import List, Optional
@@ -82,7 +82,7 @@ class PlaylistService:
             existing_playlists = self.fetch_playlists(raise_on_error=True)
             for pl in existing_playlists:
                 if pl.name == target_name:
-                    # ★修正：NavidromeClientに合わせて引数名を song_ids に統一
+                    # 既存プレイリストのIDと新しい曲IDを指定して内容を更新する。
                     result = self._client.update_playlist(
                         playlist_id=pl.id,
                         name=target_name,

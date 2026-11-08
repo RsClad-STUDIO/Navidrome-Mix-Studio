@@ -2,7 +2,7 @@
 
 
 class AppBaseException(Exception):
-    """Feishin Mix Generatorの基底例外クラス。"""
+    """アプリケーション内で発生する独自例外の基底クラス。"""
 
     pass
 
