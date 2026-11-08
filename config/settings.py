@@ -15,7 +15,7 @@ class Settings:
 
     DEFAULT_SETTINGS: Dict[str, Any] = {
         "language": "ja",
-        "connection": {"server_url": "", "username": "", "password": ""},
+        "connection": {"server_url": "", "username": ""},
         "window": {"width": 1100, "height": 700, "maximized": False},
         "scheduler": {
             "enabled": False, "mode": "daily", "time": "07:00",

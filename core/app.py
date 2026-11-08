@@ -121,6 +121,8 @@ class Application:
             mix_generator=self._mix_generator,
             mix_service=self._mix_service,
             scheduler_service=self._scheduler_service,
+            library_analyzer=self._library_analyzer,
+            mix_history_service=self._mix_history_service,
         )
 
         # 7. メインウィンドウの起動
@@ -146,6 +148,64 @@ class Application:
                 if client.test_connection().success: return client
 
         return NavidromeClient("", "", "", self._logger)
+
+    def _apply_connection_client(self, client: NavidromeClient) -> None:
+        """接続先を切り替え、接続依存サービスを再構築します。"""
+        old_client = self._client
+        if self._scheduler_service:
+            self._scheduler_service.stop()
+
+        self._client = client
+        namespace = f"{client.server_url}|{client.username}"
+        self._library_service = LibraryService(client, self._logger)
+        self._playlist_service = PlaylistService(client, self._logger)
+        self._history_service = HistoryService(client, self._logger)
+        self._mix_history_service = MixHistoryService(namespace=namespace)
+        self._library_analyzer = LibraryAnalyzer(
+            cache_manager=self._cache_manager,
+            logger=self._logger,
+            cache_namespace=namespace,
+        )
+        self._favorites_service = FavoritesService(
+            client, self._cache_manager, self._logger
+        )
+        if client.server_url:
+            self._favorites_service.sync_favorites()
+
+        self._mix_generator = MixGenerator(
+            library_service=self._library_service,
+            history_service=self._history_service,
+            mix_history_service=self._mix_history_service,
+            favorites_service=self._favorites_service,
+            blacklist_service=self._blacklist_service,
+            preset_service=self._preset_service,
+            logger=self._logger,
+        )
+        self._mix_service = MixService(
+            generator=self._mix_generator,
+            playlist_service=self._playlist_service,
+            library_analyzer=self._library_analyzer,
+            preset_service=self._preset_service,
+            logger=self._logger,
+        )
+        self._scheduler_service = SchedulerService(
+            mix_service=self._mix_service, logger=self._logger
+        )
+        self._context.replace_connection_services(
+            client=client,
+            library_service=self._library_service,
+            playlist_service=self._playlist_service,
+            history_service=self._history_service,
+            favorites_service=self._favorites_service,
+            library_analyzer=self._library_analyzer,
+            mix_history_service=self._mix_history_service,
+            mix_generator=self._mix_generator,
+            mix_service=self._mix_service,
+            scheduler_service=self._scheduler_service,
+        )
+
+        if old_client and old_client is not client:
+            old_client.close()
 
     def _apply_scheduler_settings(self) -> None:
         """保存済みのスケジューラー設定を実行中サービスへ反映します。"""
