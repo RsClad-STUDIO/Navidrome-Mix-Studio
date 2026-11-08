@@ -1,8 +1,7 @@
 {
   "connection": {
     "server_url": "",
-    "username": "",
-    "password": ""
+    "username": ""
   },
   "window": {
     "width": 1100,

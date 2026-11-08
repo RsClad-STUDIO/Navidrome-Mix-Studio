@@ -73,6 +73,40 @@ class SettingsCredentialTests(unittest.TestCase):
         reloaded = Settings(str(self.path), credential_store=self.store)
         self.assertEqual(reloaded.get("profiles")[0]["password"], "secret")
 
+    def test_repeated_saves_keep_the_same_credential_target(self):
+        settings = Settings(str(self.path), credential_store=self.store)
+        settings.set("profiles", [{
+            "name": "Home", "url": "http://localhost", "username": "user",
+            "password": "secret",
+        }])
+
+        settings.save()
+        first_target = settings.get("profiles")[0]["credential_target"]
+        settings.save()
+        second_target = settings.get("profiles")[0]["credential_target"]
+
+        self.assertEqual(first_target, second_target)
+        self.assertEqual(len(self.store.values), 1)
+
+    def test_clearing_profile_password_deletes_saved_credential(self):
+        settings = Settings(str(self.path), credential_store=self.store)
+        settings.set("profiles", [{
+            "name": "Home", "url": "http://localhost", "username": "user",
+            "password": "secret",
+        }])
+        settings.save()
+        target = settings.get("profiles")[0]["credential_target"]
+
+        settings.set("profiles", [{
+            "name": "Home", "url": "http://localhost", "username": "user",
+            "password": "", "credential_target": target,
+        }])
+        settings.save()
+
+        self.assertNotIn(target, self.store.values)
+        saved = json.loads(self.path.read_text(encoding="utf-8"))
+        self.assertNotIn("credential_target", saved["profiles"][0])
+
     def test_credential_store_failure_does_not_write_plaintext(self):
         class FailingStore(FakeCredentialStore):
             def set_password(self, target, password):

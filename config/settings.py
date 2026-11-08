@@ -117,6 +117,12 @@ class Settings:
                     source_profiles = self._data.get("profiles", [])
                     if isinstance(source_profiles, list) and profile_index < len(source_profiles):
                         source_profiles[profile_index]["credential_target"] = target
+                elif target:
+                    profile.pop("credential_target", None)
+                    source_profiles = self._data.get("profiles", [])
+                    if isinstance(source_profiles, list) and profile_index < len(source_profiles):
+                        source_profiles[profile_index].pop("credential_target", None)
+                    target = None
                 if target:
                     new_targets.add(target)
 
@@ -129,6 +135,10 @@ class Settings:
                 self._credential_store.set_password(target, password)
                 connection["credential_target"] = target
                 self._data.setdefault("connection", {})["credential_target"] = target
+            elif target:
+                connection.pop("credential_target", None)
+                self._data.setdefault("connection", {}).pop("credential_target", None)
+                target = None
             if target:
                 new_targets.add(target)
 

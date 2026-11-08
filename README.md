@@ -179,17 +179,15 @@ The dependencies are listed in `requirements.txt`.
 
 ### 1. Configure Navidrome
 
-Open **Settings** and enter:
+Open **Settings**, create or select a server profile, and enter:
 
 - Server URL
 - Username
 - Password
 
-Save the settings.
+Save the settings. When a configured primary or secondary profile connects successfully, the application switches to it immediately; restarting the application is not required.
 
-### 2. Connect
-
-Use the connection control to connect to your Navidrome server. Once connected, the application can retrieve the library and account data needed for Mix generation.
+Passwords are stored in the current Windows user's **Credential Manager**. The JSON settings file stores only a credential reference, not the password. Existing plaintext profile passwords are migrated to Credential Manager when the settings are loaded.
 
 ### 3. Load and Analyze Your Library
 
