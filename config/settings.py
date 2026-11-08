@@ -105,7 +105,7 @@ class Settings:
 
         profiles = persisted.get("profiles", [])
         if isinstance(profiles, list):
-            for profile in profiles:
+            for profile_index, profile in enumerate(profiles):
                 if not isinstance(profile, dict):
                     continue
                 password = str(profile.pop("password", "") or "")
