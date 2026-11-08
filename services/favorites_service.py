@@ -39,7 +39,14 @@ class FavoritesService:
                 return
 
         self._logger.info("Syncing Favorites from Navidrome API...")
-        starred = self._client.get_starred()
+        try:
+            starred = self._client.get_starred()
+        except Exception as exc:
+            # Keep the last known in-memory state and never cache an API failure as empty.
+            self._logger.warning(
+                "Favorites sync failed; keeping the last known state: %s", exc
+            )
+            return
 
         songs = [str(s.get("id")) for s in starred.get("song", []) if s.get("id")]
         artists = [s.get("name") for s in starred.get("artist", []) if s.get("name")]
