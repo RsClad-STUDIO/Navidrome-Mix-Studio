@@ -1,105 +1,190 @@
 """設定ファイルの読み書きおよびデフォルト値を管理するモジュール。"""
 
 import json
+import os
+import tempfile
+import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from utils.credential_store import WindowsCredentialStore
 
 
 class Settings:
-    """JSON形式の設定ファイルを管理するクラス。"""
+    """JSON設定とOS資格情報ストアを連携して管理するクラス。"""
 
     DEFAULT_SETTINGS: Dict[str, Any] = {
         "language": "ja",
-
-
-        "connection": {
-            "server_url": "",
-            "username": "",
-            "password": "",
-        },
-        "window": {
-            "width": 1100,
-            "height": 700,
-            "maximized": False,
-        },
+        "connection": {"server_url": "", "username": "", "password": ""},
+        "window": {"width": 1100, "height": 700, "maximized": False},
         "scheduler": {
-            "enabled": False,
-            "mode": "daily",  # "daily", "interval", "startup"
-            "time": "07:00",
+            "enabled": False, "mode": "daily", "time": "07:00",
             "interval_hours": 6,
         },
-        "cache": {
-            "enabled": True,
-            "expire_hours": 24,
-        },
+        "cache": {"enabled": True, "expire_hours": 24},
         "mix": {
-            "default_count": 50,
-            "auto_update": False,
+            "default_count": 50, "auto_update": False,
             "default_type": "Recent",
         },
     }
 
-    def __init__(self, filepath: str = "config.json") -> None:
-        """Settingsを初期化します。
+    CREDENTIAL_PREFIX = "NavidromeMixStudio"
 
-        Args:
-            filepath (str): 設定ファイルの保存パス
-        """
+    def __init__(self, filepath: str = "config.json", credential_store=None) -> None:
         self._filepath = Path(filepath)
+        self._credential_store = credential_store or WindowsCredentialStore()
         self._data: Dict[str, Any] = {}
+        self._known_credential_targets = set()
         self.load()
 
     def load(self) -> None:
-        """設定ファイルを読み込みます。ファイルがない、または壊れている場合はデフォルトを適用します。"""
+        """設定を読み込み、旧形式の平文パスワードを資格情報ストアへ移行します。"""
         self._data = self._deep_copy(self.DEFAULT_SETTINGS)
-
         if self._filepath.exists():
             try:
-                with open(self._filepath, "r", encoding="utf-8") as f:
-                    file_data = json.load(f)
+                with open(self._filepath, "r", encoding="utf-8") as file:
+                    file_data = json.load(file)
+                if isinstance(file_data, dict):
                     self._merge_dict(self._data, file_data)
-            except Exception:
-                self.save()
-        else:
+            except (OSError, json.JSONDecodeError):
+                # 壊れた設定を空設定で上書きしないよう、読み込み失敗は通知します。
+                raise
+
+        migration_needed = False
+        profiles = self._data.get("profiles", [])
+        if isinstance(profiles, list):
+            for profile in profiles:
+                if not isinstance(profile, dict):
+                    continue
+                target = profile.get("credential_target")
+                if "password" in profile:
+                    password = str(profile.pop("password") or "")
+                    if password:
+                        target = target or self._new_target()
+                        self._credential_store.set_password(target, password)
+                        profile["credential_target"] = target
+                    else:
+                        profile.pop("credential_target", None)
+                    profile["password"] = password
+                    migration_needed = True
+                elif target:
+                    profile["password"] = (
+                        self._credential_store.get_password(target) or ""
+                    )
+                if target:
+                    self._known_credential_targets.add(target)
+
+        connection = self._data.setdefault("connection", {})
+        if isinstance(connection, dict):
+            target = connection.get("credential_target")
+            if "password" in connection:
+                password = str(connection.pop("password") or "")
+                if password:
+                    target = target or self._new_target()
+                    self._credential_store.set_password(target, password)
+                    connection["credential_target"] = target
+                else:
+                    connection.pop("credential_target", None)
+                connection["password"] = password
+                migration_needed = True
+            elif target:
+                connection["password"] = (
+                    self._credential_store.get_password(target) or ""
+                )
+            if target:
+                self._known_credential_targets.add(target)
+
+        if migration_needed:
             self.save()
 
     def save(self) -> None:
-        """現在の設定をファイルに保存します。"""
+        """認証情報を資格情報ストアへ保存し、秘密情報を除いたJSONを原子的に書き込みます。"""
+        persisted = self._deep_copy(self._data)
+        new_targets = set()
+
+        profiles = persisted.get("profiles", [])
+        if isinstance(profiles, list):
+            for profile in profiles:
+                if not isinstance(profile, dict):
+                    continue
+                password = str(profile.pop("password", "") or "")
+                target = profile.get("credential_target")
+                if password:
+                    target = target or self._new_target()
+                    self._credential_store.set_password(target, password)
+                    profile["credential_target"] = target
+                if target:
+                    new_targets.add(target)
+
+        connection = persisted.get("connection", {})
+        if isinstance(connection, dict):
+            password = str(connection.pop("password", "") or "")
+            target = connection.get("credential_target")
+            if password:
+                target = target or self._new_target()
+                self._credential_store.set_password(target, password)
+                connection["credential_target"] = target
+            if target:
+                new_targets.add(target)
+
+        self._filepath.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = None
         try:
-            with open(self._filepath, "w", encoding="utf-8") as f:
-                json.dump(self._data, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            print(f"Failed to save settings: {e}")
+            with tempfile.NamedTemporaryFile(
+                "w", encoding="utf-8", dir=self._filepath.parent,
+                prefix=f".{self._filepath.name}.", suffix=".tmp",
+                delete=False,
+            ) as file:
+                temp_path = Path(file.name)
+                json.dump(persisted, file, indent=2, ensure_ascii=False)
+                file.flush()
+                os.fsync(file.fileno())
+            os.replace(temp_path, self._filepath)
+        except Exception:
+            if temp_path and temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except OSError:
+                    pass
+            raise
+
+        # 設定ファイルの更新に成功した後で、削除済みプロファイルの資格情報を整理します。
+        for target in self._known_credential_targets - new_targets:
+            try:
+                self._credential_store.delete_password(target)
+            except Exception:
+                pass
+        self._known_credential_targets = new_targets
 
     def get(self, key_path: str, default: Any = None) -> Any:
-        """ドット区切りのキーパスで値を取得します（例: "scheduler.enabled"）。"""
-        keys = key_path.split(".")
-        val = self._data
-        for k in keys:
-            if isinstance(val, dict) and k in val:
-                val = val[k]
+        """ドット区切りのキーパスで値を取得します。"""
+        value = self._data
+        for key in key_path.split("."):
+            if isinstance(value, dict) and key in value:
+                value = value[key]
             else:
                 return default
-        return val
+        return value
 
     def set(self, key_path: str, value: Any) -> None:
         """ドット区切りのキーパスで値を設定します。"""
         keys = key_path.split(".")
-        val = self._data
-        for k in keys[:-1]:
-            if k not in val or not isinstance(val[k], dict):
-                val[k] = {}
-            val = val[k]
-        val[keys[-1]] = value
+        value_dict = self._data
+        for key in keys[:-1]:
+            if key not in value_dict or not isinstance(value_dict[key], dict):
+                value_dict[key] = {}
+            value_dict = value_dict[key]
+        value_dict[keys[-1]] = value
+
+    def _new_target(self) -> str:
+        return f"{self.CREDENTIAL_PREFIX}/{uuid.uuid4()}"
 
     def _merge_dict(self, base: Dict[str, Any], override: Dict[str, Any]) -> None:
-        """再帰的に辞書をマージします。"""
-        for k, v in override.items():
-            if k in base and isinstance(base[k], dict) and isinstance(v, dict):
-                self._merge_dict(base[k], v)
+        for key, value in override.items():
+            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                self._merge_dict(base[key], value)
             else:
-                base[k] = v
+                base[key] = value
 
-    def _deep_copy(self, d: Dict[str, Any]) -> Dict[str, Any]:
-        """辞書のディープコピーを作成します。"""
-        return json.loads(json.dumps(d))
+    def _deep_copy(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return json.loads(json.dumps(data))
