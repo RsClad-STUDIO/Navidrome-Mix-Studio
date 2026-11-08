@@ -143,69 +143,90 @@ class Application:
         p_data = find_profile(primary_name)
         if p_data:
             client = NavidromeClient(p_data.get("url"), p_data.get("username"), p_data.get("password"), self._logger)
-            if client.test_connection().success: return client
+            if client.test_connection().success:
+                return client
+            client.close()
 
         if secondary_name and secondary_name != "None":
             s_data = find_profile(secondary_name)
             if s_data:
                 client = NavidromeClient(s_data.get("url"), s_data.get("username"), s_data.get("password"), self._logger)
-                if client.test_connection().success: return client
+                if client.test_connection().success:
+                    return client
+                client.close()
 
         return NavidromeClient("", "", "", self._logger)
 
     def _apply_connection_client(self, client: NavidromeClient) -> None:
         """接続先を切り替え、接続依存サービスを再構築します。"""
         old_client = self._client
-        if self._scheduler_service:
-            self._scheduler_service.stop()
+        old_scheduler = self._scheduler_service
+        if old_scheduler:
+            old_scheduler.stop()
+
+        try:
+            namespace = f"{client.server_url}|{client.username}"
+            library_service = LibraryService(client, self._logger)
+            playlist_service = PlaylistService(client, self._logger)
+            history_service = HistoryService(client, self._logger)
+            mix_history_service = MixHistoryService(namespace=namespace)
+            library_analyzer = LibraryAnalyzer(
+                cache_manager=self._cache_manager,
+                logger=self._logger,
+                cache_namespace=namespace,
+            )
+            favorites_service = FavoritesService(
+                client, self._cache_manager, self._logger
+            )
+            if client.server_url:
+                favorites_service.sync_favorites()
+
+            mix_generator = MixGenerator(
+                library_service=library_service,
+                history_service=history_service,
+                mix_history_service=mix_history_service,
+                favorites_service=favorites_service,
+                blacklist_service=self._blacklist_service,
+                preset_service=self._preset_service,
+                logger=self._logger,
+            )
+            mix_service = MixService(
+                generator=mix_generator,
+                playlist_service=playlist_service,
+                library_analyzer=library_analyzer,
+                preset_service=self._preset_service,
+                logger=self._logger,
+            )
+            scheduler_service = SchedulerService(
+                mix_service=mix_service, logger=self._logger
+            )
+        except Exception:
+            client.close()
+            if old_scheduler and self._settings.get("scheduler.enabled", False):
+                self._apply_scheduler_settings()
+            raise
 
         self._client = client
-        namespace = f"{client.server_url}|{client.username}"
-        self._library_service = LibraryService(client, self._logger)
-        self._playlist_service = PlaylistService(client, self._logger)
-        self._history_service = HistoryService(client, self._logger)
-        self._mix_history_service = MixHistoryService(namespace=namespace)
-        self._library_analyzer = LibraryAnalyzer(
-            cache_manager=self._cache_manager,
-            logger=self._logger,
-            cache_namespace=namespace,
-        )
-        self._favorites_service = FavoritesService(
-            client, self._cache_manager, self._logger
-        )
-        if client.server_url:
-            self._favorites_service.sync_favorites()
-
-        self._mix_generator = MixGenerator(
-            library_service=self._library_service,
-            history_service=self._history_service,
-            mix_history_service=self._mix_history_service,
-            favorites_service=self._favorites_service,
-            blacklist_service=self._blacklist_service,
-            preset_service=self._preset_service,
-            logger=self._logger,
-        )
-        self._mix_service = MixService(
-            generator=self._mix_generator,
-            playlist_service=self._playlist_service,
-            library_analyzer=self._library_analyzer,
-            preset_service=self._preset_service,
-            logger=self._logger,
-        )
-        self._scheduler_service = SchedulerService(
-            mix_service=self._mix_service, logger=self._logger
-        )
+        self._library_service = library_service
+        self._playlist_service = playlist_service
+        self._history_service = history_service
+        self._mix_history_service = mix_history_service
+        self._library_analyzer = library_analyzer
+        self._favorites_service = favorites_service
+        self._mix_generator = mix_generator
+        self._mix_service = mix_service
+        self._scheduler_service = scheduler_service
         self._context.replace_connection_services(
             client=client,
-            library_service=self._library_service,
-            playlist_service=self._playlist_service,
-            history_service=self._history_service,
-            favorites_service=self._favorites_service,
-            library_analyzer=self._library_analyzer,
-            mix_history_service=self._mix_history_service,
-            mix_generator=self._mix_generator,
-            mix_service=self._mix_service,
-            scheduler_service=self._scheduler_service,
+            library_service=library_service,
+            playlist_service=playlist_service,
+            history_service=history_service,
+            favorites_service=favorites_service,
+            library_analyzer=library_analyzer,
+            mix_history_service=mix_history_service,
+            mix_generator=mix_generator,
+            mix_service=mix_service,
+            scheduler_service=scheduler_service,
         )
 
         if old_client and old_client is not client:
