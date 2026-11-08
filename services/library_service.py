@@ -37,8 +37,8 @@ class LibraryService:
             self._logger.error(f"Failed to fetch artists: {e}")
             return []
 
-    def fetch_albums(self, size: int = 500) -> List[Album]:
-        """アルバム一覧を取得し、モデルのリストとして返します。
+    def fetch_albums(self, size: Optional[int] = None) -> List[Album]:
+        """全アルバム（または指定件数）を取得し、モデルのリストとして返します。
 
         Args:
             size (int): 取得件数
@@ -50,8 +50,9 @@ class LibraryService:
             raw_albums = self._client.get_albums(size=size)
             return [Album.from_dict(a) for a in raw_albums]
         except Exception as e:
-            self._logger.error(f"Failed to fetch albums: {e}")
-            return []
+            self._logger.error("Failed to fetch complete album list: %s", e)
+            # 取得失敗を空ライブラリとして扱わないよう呼び出し元へ伝播する。
+            raise
 
     def fetch_songs(
         self, query: str = "", size: Optional[int] = None

@@ -19,6 +19,8 @@ class NavidromeClient:
         self.username = username
         self.password = password
         self._logger = logger or logging.getLogger(__name__)
+        # Reuse TCP connections across API calls made by this client.
+        self._session = requests.Session()
 
     def _get_base_params(self) -> Dict[str, str]:
         """共通パラメータ。"""
@@ -47,7 +49,7 @@ class NavidromeClient:
         params = self._get_base_params()
 
         try:
-            resp = requests.get(url, params=params, timeout=10)
+            resp = self._session.get(url, params=params, timeout=10)
             elapsed_ms = int((time.perf_counter() - start_perf) * 1000)
 
             if resp.status_code == 404:
@@ -97,7 +99,7 @@ class NavidromeClient:
             req_params.update(params)
 
         try:
-            resp = requests.get(url, params=req_params, timeout=30)
+            resp = self._session.get(url, params=req_params, timeout=30)
             if resp.status_code == 404:
                 message = f"Navidrome API endpoint not found: {endpoint}"
                 if raise_on_error:
@@ -129,7 +131,8 @@ class NavidromeClient:
 
     def get_starred(self) -> Dict[str, Any]:
         """お気に入り（スター付き）データ（曲、アルバム、アーティスト）を取得します。"""
-        res = self._request("getStarred")
+        # Do not turn an API failure into a valid-looking empty favorites response.
+        res = self._request("getStarred", raise_on_error=True)
         starred = res.get("starred") or {}
         return {
             key: self._as_list(starred.get(key))
@@ -169,21 +172,55 @@ class NavidromeClient:
         artists.extend(direct_entries)
         return artists
 
-    def get_albums(self, size: int = 500) -> List[Dict[str, Any]]:
-        """getAlbumList2から指定件数のアルバム一覧を取得する。"""
-        if size <= 0:
+    def get_albums(self, size: Optional[int] = None) -> List[Dict[str, Any]]:
+        """getAlbumList2をページングし、指定がなければ全アルバムを取得する。"""
+        if size is not None and size <= 0:
             return []
 
-        response = self._request(
-            "getAlbumList2",
-            {
-                "type": "alphabeticalByName",
-                "size": str(size),
-                "offset": "0",
-            },
-        )
-        albums = (response.get("albumList2") or {}).get("album") or []
-        return [albums] if isinstance(albums, dict) else albums
+        page_size = 500
+        offset = 0
+        albums: List[Dict[str, Any]] = []
+        seen_ids = set()
+
+        while size is None or len(albums) < size:
+            request_size = (
+                page_size if size is None else min(page_size, size - len(albums))
+            )
+            response = self._request(
+                "getAlbumList2",
+                {
+                    "type": "alphabeticalByName",
+                    "size": str(request_size),
+                    "offset": str(offset),
+                },
+                raise_on_error=True,
+            )
+            page = (response.get("albumList2") or {}).get("album") or []
+            if isinstance(page, dict):
+                page = [page]
+            if not page:
+                break
+
+            added = 0
+            for album in page:
+                album_id = str(album.get("id", ""))
+                if not album_id or album_id not in seen_ids:
+                    albums.append(album)
+                    if album_id:
+                        seen_ids.add(album_id)
+                    added += 1
+
+            if added == 0:
+                raise RuntimeError(
+                    "Navidrome getAlbumList2 pagination did not advance; "
+                    "the server may be ignoring offset."
+                )
+
+            offset += len(page)
+            if len(page) < request_size:
+                break
+
+        return albums
 
     def search_songs(
         self,
@@ -310,7 +347,7 @@ class NavidromeClient:
             params_list.append(("songId", sid))
 
         try:
-            resp = requests.get(url, params=params_list, timeout=10)
+            resp = self._session.get(url, params=params_list, timeout=10)
             resp.raise_for_status()
             sub = resp.json().get("subsonic-response", {})
             if sub.get("status") == "ok":
@@ -338,7 +375,7 @@ class NavidromeClient:
             params_list.append(("songId", sid))
 
         try:
-            resp = requests.get(url, params=params_list, timeout=10)
+            resp = self._session.get(url, params=params_list, timeout=10)
             resp.raise_for_status()
             sub = resp.json().get("subsonic-response", {})
             if sub.get("status") == "ok":
