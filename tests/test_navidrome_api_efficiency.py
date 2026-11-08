@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from api.navidrome_client import NavidromeClient
 from services.favorites_service import FavoritesService
+from services.library_service import LibraryService
 
 
 class NavidromeApiEfficiencyTests(unittest.TestCase):
@@ -51,6 +52,25 @@ class NavidromeApiEfficiencyTests(unittest.TestCase):
             self.client.get_albums(size=500),
             [{"id": "album-1"}],
         )
+
+    def test_get_albums_raises_when_server_repeats_a_full_page(self):
+        repeated_page = [{"id": f"album-{i}"} for i in range(500)]
+        self.client._request = Mock(return_value={
+            "albumList2": {"album": repeated_page}
+        })
+
+        with self.assertRaisesRegex(RuntimeError, "pagination did not advance"):
+            self.client.get_albums()
+
+        self.assertEqual(self.client._request.call_count, 2)
+
+    def test_library_service_propagates_album_fetch_failure(self):
+        client = Mock()
+        client.get_albums.side_effect = RuntimeError("API unavailable")
+        service = LibraryService(client)
+
+        with self.assertRaisesRegex(RuntimeError, "API unavailable"):
+            service.fetch_albums()
 
     def test_get_starred_propagates_api_failure(self):
         self.client._request = Mock(side_effect=RuntimeError("API unavailable"))
