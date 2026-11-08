@@ -172,17 +172,19 @@ class NavidromeClient:
         artists.extend(direct_entries)
         return artists
 
-    def get_albums(self, size: int = 500) -> List[Dict[str, Any]]:
-        """getAlbumList2をオフセットページングし、指定件数まで取得する。"""
-        if size <= 0:
+    def get_albums(self, size: Optional[int] = None) -> List[Dict[str, Any]]:
+        """getAlbumList2をページングし、指定がなければ全アルバムを取得する。"""
+        if size is not None and size <= 0:
             return []
 
-        page_size = min(size, 500)
+        page_size = 500
         offset = 0
         albums: List[Dict[str, Any]] = []
 
-        while len(albums) < size:
-            request_size = min(page_size, size - len(albums))
+        while size is None or len(albums) < size:
+            request_size = (
+                page_size if size is None else min(page_size, size - len(albums))
+            )
             response = self._request(
                 "getAlbumList2",
                 {
