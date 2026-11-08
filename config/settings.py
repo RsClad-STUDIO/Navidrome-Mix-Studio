@@ -40,6 +40,7 @@ class Settings:
     def load(self) -> None:
         """設定を読み込み、旧形式の平文パスワードを資格情報ストアへ移行します。"""
         self._data = self._deep_copy(self.DEFAULT_SETTINGS)
+        self._known_credential_targets.clear()
         if self._filepath.exists():
             try:
                 with open(self._filepath, "r", encoding="utf-8") as file:
@@ -53,7 +54,7 @@ class Settings:
         migration_needed = False
         profiles = self._data.get("profiles", [])
         if isinstance(profiles, list):
-            for profile in profiles:
+            for profile_index, profile in enumerate(profiles):
                 if not isinstance(profile, dict):
                     continue
                 target = profile.get("credential_target")
@@ -113,6 +114,9 @@ class Settings:
                     target = target or self._new_target()
                     self._credential_store.set_password(target, password)
                     profile["credential_target"] = target
+                    source_profiles = self._data.get("profiles", [])
+                    if isinstance(source_profiles, list) and profile_index < len(source_profiles):
+                        source_profiles[profile_index]["credential_target"] = target
                 if target:
                     new_targets.add(target)
 
@@ -124,6 +128,7 @@ class Settings:
                 target = target or self._new_target()
                 self._credential_store.set_password(target, password)
                 connection["credential_target"] = target
+                self._data.setdefault("connection", {})["credential_target"] = target
             if target:
                 new_targets.add(target)
 

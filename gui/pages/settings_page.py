@@ -288,7 +288,6 @@ class SettingsPage(QWidget):
         s.set("mix.auto_update", self.chk_mix_auto.isChecked())
         s.set("connection.server_url", self.edit_server_url.text())
         s.set("connection.username", self.edit_username.text())
-        s.set("connection.password", self.edit_password.text())
 
         new_profiles = [profile.to_dict() for profile in self._profiles]
 

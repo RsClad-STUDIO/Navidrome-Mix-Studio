@@ -125,6 +125,10 @@ class Application:
             mix_history_service=self._mix_history_service,
         )
 
+        self._context.set_connection_services_callback(
+            self._apply_connection_client
+        )
+
         # 7. メインウィンドウの起動
         self._main_window = MainWindow(context=self._context)
 

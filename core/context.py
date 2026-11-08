@@ -56,6 +56,19 @@ class AppContext:
         self._scheduler_service = scheduler_service
         self._library_analyzer = library_analyzer
         self._mix_history_service = mix_history_service
+        self._connection_services_callback = None
+
+    def set_connection_services_callback(self, callback) -> None:
+        """実行時の接続先切替を担当するアプリケーション処理を登録します。"""
+        self._connection_services_callback = callback
+
+    def replace_connection_services_callback(
+        self, client: NavidromeClient
+    ) -> None:
+        """登録済みの接続切替処理を実行します。"""
+        if self._connection_services_callback is None:
+            raise RuntimeError("Connection update handler is not configured.")
+        self._connection_services_callback(client)
 
     @property
     def settings(self) -> Settings:
