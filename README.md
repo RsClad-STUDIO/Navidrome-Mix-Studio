@@ -217,11 +217,11 @@ Review the generated tracks and save the Mix to Navidrome. The resulting playlis
 
 ## Testing and Project Status
 
-The current development branch has passed its automated Python test workflow:
+The automated Python test workflow runs in GitHub Actions. Check the latest workflow run for the current branch's result and test count:
 
 - Python 3.11
 - Python syntax compilation
-- **56 automated tests passed**
+- Automated test suite
 
 Core integration behavior has also been checked against a live Navidrome instance with a library of **6,029 tracks**:
 
