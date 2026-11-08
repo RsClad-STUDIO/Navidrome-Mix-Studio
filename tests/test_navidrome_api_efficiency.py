@@ -68,11 +68,14 @@ class NavidromeApiEfficiencyTests(unittest.TestCase):
         client.username = "user"
         client.get_starred.side_effect = RuntimeError("API unavailable")
         cache = Mock()
+        cache.get.return_value = None
         service = FavoritesService(client, cache_manager=cache)
+        service._starred_song_ids = {"previously-favorited"}
 
         service.sync_favorites()
 
         cache.set.assert_not_called()
+        self.assertTrue(service.is_song_favorite("previously-favorited"))
         self.assertFalse(service.is_song_favorite("song-1"))
 
 
