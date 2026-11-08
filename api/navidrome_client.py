@@ -352,7 +352,7 @@ class NavidromeClient:
 
     def get_playlists(self) -> List[Dict[str, Any]]:
         """プレイリスト一覧を取得します。"""
-        res = self._request("getPlaylists")
+        res = self._request("getPlaylists", raise_on_error=True)
         return self._as_list((res.get("playlists") or {}).get("playlist"))
 
     def get_playlist(self, playlist_id: str) -> Dict[str, Any]:
