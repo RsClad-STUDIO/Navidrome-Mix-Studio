@@ -37,6 +37,8 @@ class AppContext:
         mix_generator: Optional[MixGenerator] = None,
         mix_service: Optional[MixService] = None,
         scheduler_service: Optional[SchedulerService] = None,
+        library_analyzer=None,
+        mix_history_service=None,
     ) -> None:
         self._settings = settings
         self._logger = logger
@@ -52,6 +54,21 @@ class AppContext:
         self._mix_generator = mix_generator
         self._mix_service = mix_service
         self._scheduler_service = scheduler_service
+        self._library_analyzer = library_analyzer
+        self._mix_history_service = mix_history_service
+        self._connection_services_callback = None
+
+    def set_connection_services_callback(self, callback) -> None:
+        """実行時の接続先切替を担当するアプリケーション処理を登録します。"""
+        self._connection_services_callback = callback
+
+    def replace_connection_services_callback(
+        self, client: NavidromeClient
+    ) -> None:
+        """登録済みの接続切替処理を実行します。"""
+        if self._connection_services_callback is None:
+            raise RuntimeError("Connection update handler is not configured.")
+        self._connection_services_callback(client)
 
     @property
     def settings(self) -> Settings:
@@ -100,6 +117,32 @@ class AppContext:
     @property
     def mix_service(self) -> Optional[MixService]:
         return self._mix_service
+
+    def replace_connection_services(
+        self,
+        *,
+        client: NavidromeClient,
+        library_service: LibraryService,
+        playlist_service: PlaylistService,
+        history_service: HistoryService,
+        favorites_service: FavoritesService,
+        library_analyzer,
+        mix_history_service,
+        mix_generator: MixGenerator,
+        mix_service: MixService,
+        scheduler_service: SchedulerService,
+    ) -> None:
+        """接続先切替後のサービス一式を、共有コンテキストへ反映します。"""
+        self._client = client
+        self._library_service = library_service
+        self._playlist_service = playlist_service
+        self._history_service = history_service
+        self._favorites_service = favorites_service
+        self._library_analyzer = library_analyzer
+        self._mix_history_service = mix_history_service
+        self._mix_generator = mix_generator
+        self._mix_service = mix_service
+        self._scheduler_service = scheduler_service
 
     @property
     def scheduler_service(self) -> Optional[SchedulerService]:

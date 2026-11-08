@@ -22,6 +22,10 @@ class NavidromeClient:
         # Reuse TCP connections across API calls made by this client.
         self._session = requests.Session()
 
+    def close(self) -> None:
+        """保持しているHTTPセッションを閉じます。"""
+        self._session.close()
+
     def _get_base_params(self) -> Dict[str, str]:
         """共通パラメータ。"""
         return {

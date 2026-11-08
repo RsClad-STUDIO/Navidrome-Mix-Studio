@@ -215,10 +215,19 @@ class SettingsPage(QWidget):
             self._refresh_profile_combos(settings.get("active_profile", remaining_names[0]))
 
     def _on_test_connection(self) -> None:
-        self.lbl_test_status.setText(tr(TKey.SETTINGS_STATUS_CONNECTING)); self.lbl_test_status.setStyleSheet("color: orange;")
-        client = NavidromeClient(self.edit_server_url.text(), self.edit_username.text(), self.edit_password.text())
-        self._last_test_result = client.test_connection()
-        self._update_status_label(self._last_test_result)
+        self.lbl_test_status.setText(tr(TKey.SETTINGS_STATUS_CONNECTING))
+        self.lbl_test_status.setStyleSheet("color: orange;")
+        client = NavidromeClient(
+            self.edit_server_url.text(),
+            self.edit_username.text(),
+            self.edit_password.text(),
+            self._context.logger,
+        )
+        try:
+            self._last_test_result = client.test_connection()
+            self._update_status_label(self._last_test_result)
+        finally:
+            client.close()
 
     def _on_language_ui_changed(self) -> None:
         code = self.combo_lang.currentData()
@@ -279,7 +288,6 @@ class SettingsPage(QWidget):
         s.set("mix.auto_update", self.chk_mix_auto.isChecked())
         s.set("connection.server_url", self.edit_server_url.text())
         s.set("connection.username", self.edit_username.text())
-        s.set("connection.password", self.edit_password.text())
 
         new_profiles = [profile.to_dict() for profile in self._profiles]
 
@@ -315,13 +323,73 @@ class SettingsPage(QWidget):
             s.get("mix.auto_update", False),
         )
         scheduler_changed = old_scheduler != new_scheduler
-        s.save()
+
+        # 接続先が変わる場合は、保存前に新しい接続先を検証します。
+        connection_candidate = None
+        if conn_changed:
+            profile_by_name = {
+                profile.get("name"): profile for profile in new_profiles
+            }
+            candidates = []
+            for profile_name in (primary_name, secondary_name):
+                profile = profile_by_name.get(profile_name)
+                if profile and profile.get("url"):
+                    candidates.append(profile)
+
+            if candidates:
+                last_error = "No configured Navidrome profile could connect."
+                for profile in candidates:
+                    candidate = NavidromeClient(
+                        profile.get("url", ""),
+                        profile.get("username", ""),
+                        profile.get("password", ""),
+                        self._context.logger,
+                    )
+                    result = candidate.test_connection()
+                    if result.success:
+                        connection_candidate = candidate
+                        break
+                    last_error = result.error_message
+                    candidate.close()
+
+                if connection_candidate is None:
+                    QMessageBox.warning(
+                        self,
+                        tr(TKey.SETTINGS_TITLE),
+                        last_error,
+                    )
+                    s.load()
+                    self._load_settings()
+                    return
+            else:
+                connection_candidate = NavidromeClient(
+                    "", "", "", self._context.logger
+                )
+
+        try:
+            s.save()
+        except Exception as exc:
+            if connection_candidate:
+                connection_candidate.close()
+            QMessageBox.critical(
+                self,
+                tr(TKey.SETTINGS_TITLE),
+                f"設定を保存できませんでした: {exc}",
+            )
+            return
+
+        if connection_candidate:
+            self._context.replace_connection_services_callback(connection_candidate)
+            main_window = self.window()
+            refresh_status = getattr(main_window, "retranslate_ui", None)
+            if callable(refresh_status):
+                refresh_status()
 
         scheduler = self._context.scheduler_service
         if scheduler:
             if not s.get("scheduler.enabled", False):
                 scheduler.stop()
-            elif scheduler_changed:
+            elif scheduler_changed or connection_candidate:
                 scheduler.start(
                     mode=s.get("scheduler.mode", "daily"),
                     target_time=s.get("scheduler.time", "07:00"),
@@ -332,17 +400,11 @@ class SettingsPage(QWidget):
                     run_on_startup=False,
                 )
 
-        if conn_changed:
-            QMessageBox.information(
-                self,
-                tr(TKey.DIALOG_RESTART_REQUIRED_TITLE),
-                tr(TKey.DIALOG_RESTART_REQUIRED_MSG)
-            )
-        else:
-            QMessageBox.information(
-                self,
-                tr(TKey.DIALOG_SAVE_SUCCESS_TITLE),
-                tr(TKey.DIALOG_SAVE_SUCCESS_MSG)
-            )
-
+        QMessageBox.information(
+            self,
+            tr(TKey.DIALOG_SAVE_SUCCESS_TITLE),
+            tr(TKey.DIALOG_SAVE_SUCCESS_MSG),
+        )
         self._refresh_profile_combos(self.edit_prof_name.text())
+
+

@@ -12,6 +12,11 @@ class NavidromeApiEfficiencyTests(unittest.TestCase):
             "http://navidrome.example", "user", "password"
         )
 
+    def test_close_releases_the_persistent_http_session(self):
+        self.client._session = Mock()
+        self.client.close()
+        self.client._session.close.assert_called_once_with()
+
     def test_get_albums_fetches_multiple_pages(self):
         first_page = [{"id": f"album-{i}"} for i in range(500)]
         second_page = [{"id": f"album-{i}"} for i in range(500, 620)]
