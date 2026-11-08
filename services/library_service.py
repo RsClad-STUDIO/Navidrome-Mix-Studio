@@ -50,8 +50,9 @@ class LibraryService:
             raw_albums = self._client.get_albums(size=size)
             return [Album.from_dict(a) for a in raw_albums]
         except Exception as e:
-            self._logger.error(f"Failed to fetch albums: {e}")
-            return []
+            self._logger.error("Failed to fetch complete album list: %s", e)
+            # 取得失敗を空ライブラリとして扱わないよう呼び出し元へ伝播する。
+            raise
 
     def fetch_songs(
         self, query: str = "", size: Optional[int] = None
