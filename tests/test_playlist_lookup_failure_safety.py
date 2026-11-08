@@ -71,6 +71,25 @@ class PlaylistLookupFailureSafetyTests(unittest.TestCase):
         )
         self.client.create_playlist.assert_not_called()
 
+    def test_failed_existing_playlist_update_does_not_create_duplicate(self):
+        self.client.get_playlists.return_value = [
+            {"id": "playlist-1", "name": "Daily Mix"}
+        ]
+        self.client.update_playlist.return_value = None
+        self.client.create_playlist = Mock()
+
+        result = self.service.create_mix_playlist(
+            "Daily Mix", self.songs, auto_overwrite=True
+        )
+
+        self.assertIsNone(result)
+        self.client.update_playlist.assert_called_once_with(
+            playlist_id="playlist-1",
+            name="Daily Mix",
+            song_ids=["song-1"],
+        )
+        self.client.create_playlist.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
