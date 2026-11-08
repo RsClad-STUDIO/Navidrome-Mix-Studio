@@ -180,6 +180,7 @@ class NavidromeClient:
         page_size = 500
         offset = 0
         albums: List[Dict[str, Any]] = []
+        seen_ids = set()
 
         while size is None or len(albums) < size:
             request_size = (
@@ -200,7 +201,21 @@ class NavidromeClient:
             if not page:
                 break
 
-            albums.extend(page)
+            added = 0
+            for album in page:
+                album_id = str(album.get("id", ""))
+                if not album_id or album_id not in seen_ids:
+                    albums.append(album)
+                    if album_id:
+                        seen_ids.add(album_id)
+                    added += 1
+
+            if added == 0:
+                raise RuntimeError(
+                    "Navidrome getAlbumList2 pagination did not advance; "
+                    "the server may be ignoring offset."
+                )
+
             offset += len(page)
             if len(page) < request_size:
                 break
