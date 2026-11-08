@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock
 
 from api.navidrome_client import NavidromeClient
+from services.favorites_service import FavoritesService
 
 
 class NavidromeApiEfficiencyTests(unittest.TestCase):
@@ -30,6 +31,17 @@ class NavidromeApiEfficiencyTests(unittest.TestCase):
             ["500", "120"],
         )
 
+    def test_get_albums_fetches_all_pages_when_size_is_omitted(self):
+        self.client._request = Mock(side_effect=[
+            {"albumList2": {"album": [{"id": f"album-{i}"} for i in range(500)]}},
+            {"albumList2": {"album": [{"id": "album-500"}]}},
+        ])
+
+        albums = self.client.get_albums()
+
+        self.assertEqual(len(albums), 501)
+        self.assertEqual(self.client._request.call_count, 2)
+
     def test_get_albums_normalizes_single_album_response(self):
         self.client._request = Mock(return_value={
             "albumList2": {"album": {"id": "album-1"}}
@@ -49,6 +61,19 @@ class NavidromeApiEfficiencyTests(unittest.TestCase):
         self.client._request.assert_called_once_with(
             "getStarred", raise_on_error=True
         )
+
+    def test_favorites_service_does_not_cache_api_failure_as_empty(self):
+        client = Mock()
+        client.server_url = "http://navidrome.example"
+        client.username = "user"
+        client.get_starred.side_effect = RuntimeError("API unavailable")
+        cache = Mock()
+        service = FavoritesService(client, cache_manager=cache)
+
+        service.sync_favorites()
+
+        cache.set.assert_not_called()
+        self.assertFalse(service.is_song_favorite("song-1"))
 
 
 if __name__ == "__main__":
