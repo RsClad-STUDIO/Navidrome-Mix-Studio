@@ -71,7 +71,7 @@ class PlaylistManagerPage(QWidget):
         self.lbl_info_name = QLabel()
         self.lbl_info_name.setWordWrap(True) # 長い名前の折り返し
         self.lbl_info_count = QLabel()
-        # 更新日時ラベルを削除
+        # 選択中プレイリストの曲数を表示する。
         info_lyt.addWidget(self.lbl_info_name)
         info_lyt.addWidget(self.lbl_info_count)
         right_lyt.addWidget(self.group_info)

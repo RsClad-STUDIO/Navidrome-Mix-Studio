@@ -1,4 +1,4 @@
-"""Phase 13.1: Blocklist管理ページの国際化および名称統一対応（クラス名互換性維持版）。"""
+"""禁止リストの表示・追加・削除を行う画面。"""
 
 from typing import TYPE_CHECKING
 from PySide6.QtWidgets import (
@@ -20,8 +20,7 @@ if TYPE_CHECKING:
 
 class BlacklistPage(QWidget):
     """
-    禁止リスト (Blocklist) 管理UIクラス。
-    MainWindowとの互換性のためクラス名は BlacklistPage を維持します。
+    禁止リストを管理する画面。
     """
 
     def __init__(self, context: "AppContext") -> None:

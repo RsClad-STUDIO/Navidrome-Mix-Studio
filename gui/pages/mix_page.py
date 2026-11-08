@@ -1,4 +1,4 @@
-"""Phase 13.2: MixPage - Playlist Name Internationalization Implementation."""
+"""Mixの生成条件を設定し、結果を表示・保存する画面。"""
 
 from datetime import datetime  # 日時取得用
 from typing import List, Optional, TYPE_CHECKING

@@ -1,4 +1,4 @@
-"""Phase 12.7.1: 戦略ロジックの定数・閾値を管理する設定ファイル"""
+"""各Mix戦略で使用する比率・判定閾値を定義する設定モジュール。"""
 
 class DailyMixConfig:
     """Daily Mix 用のパラメータ"""
@@ -13,9 +13,9 @@ class DailyMixConfig:
     RECENT_DAYS_THRESHOLD = 30  # 現行DailyStrategyの動作を維持
     PAST_PLAY_COUNT_MIN = 15
     PAST_DAYS_THRESHOLD = 60
-    # Scale the seed pool with the requested output size (10 seeds for 25 tracks).
+    # 初期候補プールの規模を、生成するMixの曲数に比例させる。
     CORE_POOL_RATIO = 0.40
-    # Discovery samples the middle score band by library percentile, not fixed indexes.
+    # Discovery候補は固定インデックスではなく、ライブラリ内のスコア分位で抽出する。
     DISCOVERY_START_RATIO = 0.005
     DISCOVERY_END_RATIO = 0.10
 

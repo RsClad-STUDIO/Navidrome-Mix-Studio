@@ -1,4 +1,4 @@
-"""アプリケーション全体のライフサイクルを管理するモジュール。 (Phase 13.1 対応)"""
+"""アプリケーションの初期化、サービス構築、起動および終了を管理するモジュール。"""
 
 import sys
 import logging
@@ -39,7 +39,7 @@ class Application:
         self._logger = setup_logger()
         self._logger.info("Initializing Navidrome Mix Studio Phase 13.1...")
 
-        # --- Phase 13.1: 翻訳基盤の初期化 (GUIより先に行う) ---
+        # GUIの生成前に翻訳基盤を初期化する。
         lang = self._settings.get("language", "ja")
         TranslationManager.instance().load_language(lang)
 

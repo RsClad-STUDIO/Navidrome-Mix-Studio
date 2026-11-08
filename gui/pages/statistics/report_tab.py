@@ -1,4 +1,4 @@
-"""Phase 13.2: ReportTab - Fully Internationalized & Hardcode-Free."""
+"""Mix生成結果の統計レポートを表示するタブ。"""
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (

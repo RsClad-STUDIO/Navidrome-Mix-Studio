@@ -1,4 +1,4 @@
-"""Phase 13.2: MixTableModel - Consistent Reason Mapping & Hardcode-Free."""
+"""Mix一覧を表示するQtテーブルモデル。"""
 
 from typing import Any, List, Optional, Dict
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
