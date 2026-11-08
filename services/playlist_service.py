@@ -16,13 +16,15 @@ class PlaylistService:
         self._client = client
         self._logger = logger or logging.getLogger(__name__)
 
-    def fetch_playlists(self) -> List[Playlist]:
-        """全プレイリストを取得します。"""
+    def fetch_playlists(self, *, raise_on_error: bool = False) -> List[Playlist]:
+        """全プレイリストを取得します。失敗時は必要に応じて例外を伝播します。"""
         try:
             raw = self._client.get_playlists()
             return [Playlist.from_dict(p) for p in raw]
         except Exception as e:
             self._logger.error(f"Failed to fetch playlists: {e}")
+            if raise_on_error:
+                raise
             return []
 
     def create_playlist(
@@ -77,7 +79,7 @@ class PlaylistService:
 
         # 1. 自動上書きモードの場合、同名プレイリストを探して中身を更新
         if auto_overwrite:
-            existing_playlists = self.fetch_playlists()
+            existing_playlists = self.fetch_playlists(raise_on_error=True)
             for pl in existing_playlists:
                 if pl.name == target_name:
                     # ★修正：NavidromeClientに合わせて引数名を song_ids に統一
